@@ -12,6 +12,8 @@ These documents were migrated from the local knowledge wiki into the public Plot
 - [2026-04-26-ai-comic-drama-tools-github-triage.md](./research/2026-04-26-ai-comic-drama-tools-github-triage.md)
 - [2026-04-28-dramaclaw-build-vs-adopt-recommendation.md](./research/2026-04-28-dramaclaw-build-vs-adopt-recommendation.md)
 - [2026-04-28-autoflow-architecture-research.md](./research/2026-04-28-autoflow-architecture-research.md)
+- [2026-04-28-plotloom-agent-neutral-skill-pack-research.md](./research/2026-04-28-plotloom-agent-neutral-skill-pack-research.md)
+- [2026-04-28-plotloom-mvp-artifact-contract-draft.md](./research/2026-04-28-plotloom-mvp-artifact-contract-draft.md)
 
 ## Source reading
 
