@@ -457,17 +457,150 @@ EP001 / Clip 01 / v002
 
 Feishu 不是进度系统，只是媒体回传和反馈通道。
 
-## 12. 入口行为
+## 12. 默认端到端用户旅程
 
-Plotloom 启动时：
+MVP 需要有一条可演示的 happy path，但这不是固定 pipeline。它只是从空白想法到第一集成片的默认路径。
 
-- 如果当前目录有 `series.md`，视为当前 Plotloom repo，并继续。
-- 如果没有 `series.md`，询问是否创建新的 Plotloom repo。
-- 如果用户只是要一个独立 video prompt，不强制创建 repo。
+```text
+用户给出短剧想法
+  -> Plotloom 确认或创建 series repo
+  -> 写入 series.md / characters.md
+  -> 为核心角色生成 character-grid.png
+  -> 生成 EP001 的 video-prompts.md
+  -> 需要调用英文模型时生成 video-prompts-en.md
+  -> 按 clip 一条一条生成视频候选
+  -> 每条候选通过 Feishu 回传，用户选择接受 / 重抽 / 改 prompt
+  -> accepted clips 写入 selected.mp4
+  -> stitch selected clips 为 episodes/ep001/videos/final.mp4
+  -> 通过 Feishu 回传 final.mp4 和最小交付说明
+```
 
-一个新 repo 表示一部短剧 / 一个 series。
+默认旅程的关键约束：
 
-## 13. MVP Skill Set
+- agent 可以跳过已经满足的步骤，不重做已有资产。
+- 每次视频候选生成后都应回传，不等待整集生成完再统一反馈。
+- 如果用户只要求独立 prompt 或单个 clip，不强制进入完整旅程。
+- 如果缺少继续执行所需的创作判断，agent 应提出一个具体问题；如果只是路径、目录、文件名等工程细节，agent 自行决定。
+
+## 13. Repo 发现与选择规则
+
+Plotloom 启动或被调用时，按下面顺序发现 repo：
+
+1. 如果当前目录或父目录中存在 `series.md`，视为当前 series repo，直接继续。
+2. 如果当前目录没有 `series.md`，读取 `~/plotloom.toml`。
+3. 如果 `~/plotloom.toml` 只有一个 `status = "active"` 的 repo，且用户表达是“继续 / 接着做 / 上次那个”，可以选择该 repo，但回传时要说明选择依据。
+4. 如果有多个 active repo，或用户说法无法唯一指向某个 repo，列出候选 repo 的 `slug / title / path`，请用户选择。
+5. 如果 registry 中记录的 `path` 不存在，标记为失效候选，不自动创建同名目录；需要用户确认是迁移、删除还是重建。
+6. 如果没有可用 repo，且用户明确要开始一个新短剧，则创建 `plotloom_repo/<slug>/` 并把它登记进 `~/plotloom.toml`。
+7. 如果用户只是 casual brainstorming，不创建 repo，不写 registry。
+
+`~/plotloom.toml` 只解决“有哪些短剧 repo、在哪里”的问题，不承载生产状态。当前生产状态来自 series repo 内文件是否存在。
+
+## 14. MVP Skill 输入/输出契约
+
+MVP skills 可以自由组合，但每个 skill 至少遵守下面的输入/输出边界。
+
+### 14.1 `using-plotloom`
+
+- 读取：当前目录、父目录、`~/plotloom.toml`、用户当前意图。
+- 写入：通常不写文件；只有在用户明确创建新 repo 时，才更新 registry。
+- 完成条件：确定当前要操作的 series repo，或明确本次只是独立 prompt / brainstorming。
+- 需要问用户：多个 repo 都可能匹配、创建新 repo 会影响长期目录结构、用户意图不足以决定题材方向。
+
+### 14.2 `plotloom-create-series`
+
+- 读取：用户短剧想法、目标语言/市场默认、可选已有素材。
+- 写入：`series.md`、`characters.md`、必要目录结构，并更新 `~/plotloom.toml`。
+- 完成条件：series repo 可被后续 skills 读取，且至少包含 series premise、核心角色、目标集数或集数决策原则。
+- 需要问用户：题材/主角/核心冲突缺失，继续生成会明显改变创作方向。
+
+### 14.3 `plotloom-design-character-grid`
+
+- 读取：`characters.md`、`series.md`、已有 `assets/cast/<character-slug>/`。
+- 写入：`assets/cast/<character-slug>/character-grid.png` 或新版 `character-grid-vN.png`，必要时更新 `notes.md`。
+- 完成条件：核心角色拥有可复用 character grid，可作为视频生成引用。
+- 需要问用户：角色视觉方向存在多种互斥路线；否则 agent 可自行生成候选并回传。
+
+### 14.4 `plotloom-write-video-prompts`
+
+- 读取：`series.md`、`characters.md`、必要角色/场景资产、可选 `episode-card.md`。
+- 写入：`episodes/ep001/video-prompts.md`，必要时补 `episode-card.md`。
+- 完成条件：每个 clip 都有连续叙事 prompt，能直接交给模型适配层继续处理。
+- 需要问用户：剧情爽点、反转、结尾钩子缺失且无法从 series context 合理推导。
+
+### 14.5 `plotloom-translate-video-prompts-en`
+
+- 读取：`episodes/ep001/video-prompts.md`、目标模型约束。
+- 写入：`episodes/ep001/video-prompts-en.md`。
+- 完成条件：英文 prompt 保留中文创作意图，并适配目标模型输入习惯。
+- 需要问用户：通常不问；除非目标模型或发布语言策略发生变化。
+
+### 14.6 `plotloom-draw-image`
+
+- 读取：`series.md`、`characters.md`、对应角色/场景/封面的创作意图。
+- 写入：角色 grid、场景 candidates/selected、封面 candidates/selected 等图片资产。
+- 完成条件：图片候选已保存并回传，用户可以接受、重抽或调整方向。
+- 需要问用户：用户需要选择候选，或视觉方向出现明显分歧。
+
+### 14.7 `plotloom-draw-video-clip`
+
+- 读取：`video-prompts-en.md` 或 `video-prompts.md`、角色/场景引用资产、目标 video adapter。
+- 写入：`episodes/ep001/videos/clip-XX/candidates/vNNN.mp4`；用户接受后写入或复制为 `selected.mp4`。
+- 完成条件：单个 clip 候选已生成、保存、回传，并拿到接受 / 重抽 / 改 prompt 的下一步反馈。
+- 需要问用户：每条候选生成后都需要用户判断，不自动把未确认候选推进为 selected。
+
+### 14.8 `plotloom-stitch-clips`
+
+- 读取：所有必需 `selected.mp4`。
+- 写入：`episodes/ep001/videos/final.mp4`。
+- 完成条件：final.mp4 可播放，并且已验证 selected clips 的画幅、分辨率、帧率、codec/container、音频兼容性；必要时已归一化。
+- 需要问用户：缺少 selected clip，或归一化会明显改变画面/声音质量。
+
+### 14.9 `plotloom-deliver`
+
+- 读取：要交付的候选图片、候选视频、final.mp4、最小说明文本。
+- 写入：通常不写 repo 文件；通过 Feishu 或其他 adapter 发出媒体和选择提示。
+- 完成条件：用户在目标通道收到媒体，消息包含 episode、clip、version、需要做的决定。
+- 需要问用户：交付目标不明确，或同一媒体有多个版本需要用户选择。
+
+## 15. 最小 Demo Scenario
+
+MVP 应能用一个虚构短剧跑通，不依赖真实项目。
+
+示例：
+
+```text
+series slug: fake-heiress-reboot
+title: Fake Heiress Reboot
+premise: 被豪门赶出的假千金重启人生，第一集在订婚宴上识破陷害并反手夺回主动权。
+target episodes: 12（可由用户改）
+core characters:
+  - Ava：假千金，外柔内狠，第一集完成觉醒。
+  - Ethan：未婚夫，表面冷漠，实际观察局势。
+  - Chloe：真千金，第一集制造陷害。
+EP001 clips:
+  - clip-01：订婚宴羞辱与陷害发生，Ava 被迫站到全场中心。
+  - clip-02：Ava 亮出证据反击，结尾留下“她早就知道真相”的钩子。
+```
+
+Demo repo 最小验收物：
+
+```text
+~/plotloom.toml
+plotloom_repo/fake-heiress-reboot/
+  series.md
+  characters.md
+  assets/cast/ava/character-grid.png
+  episodes/ep001/video-prompts.md
+  episodes/ep001/video-prompts-en.md
+  episodes/ep001/videos/clip-01/selected.mp4
+  episodes/ep001/videos/clip-02/selected.mp4
+  episodes/ep001/videos/final.mp4
+```
+
+Demo 成功标准：用户能在 Feishu 里收到 EP001 final.mp4，并能基于同一个 repo 继续要求“重抽 clip-02”或“做第二集 prompt”。
+
+## 16. MVP Skill Set
 
 MVP 聚焦少量可组合 skills。
 
@@ -497,7 +630,7 @@ plotloom-model-adapter-optimizer
 
 商业判断 / market-sense 不进 MVP。
 
-## 14. 不在 MVP 范围内
+## 17. 不在 MVP 范围内
 
 以下明确不在 MVP：
 
@@ -513,7 +646,7 @@ plotloom-model-adapter-optimizer
 - 强制 Git 或 GitHub 集成
 - YAML / JSON artifact schema
 
-## 15. MVP 成功标准
+## 18. MVP 成功标准
 
 Plotloom MVP 成功的标准：
 
@@ -526,7 +659,7 @@ Plotloom MVP 成功的标准：
 7. 已接受 clips 可以拼成 `episodes/ep001/videos/final.mp4`。
 8. 系统不会变成 PM 工具、dashboard 或过度设计的 artifact protocol。
 
-## 16. 当前暂不解决的问题
+## 19. 当前暂不解决的问题
 
 这些留到后续，不作为 MVP blocker：
 
