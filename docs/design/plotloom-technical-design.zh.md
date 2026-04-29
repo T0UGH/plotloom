@@ -198,6 +198,14 @@ episodes/ep001/images/covers/selected.png
 - Codex imagegen 是 MVP adapter，不是 Plotloom core。
 - core skill 只表达图片意图、质量要求、输出路径。
 - 如果未来换到其他 image model，只替换 adapter，不改 repo contract。
+- `character-grid.png` 永远是当前有效引用。`character-grid-vN.png` 只作为历史版本或重生成归档；进入视频生成时，skills 只依赖 `character-grid.png`。
+
+MVP 可执行契约：
+
+- adapter 必须支持 dry-run，输出将要使用的 prompt、参考图、目标路径，不调用真实生成。
+- adapter 必须把生成结果保存或复制到指定 output path，而不是让调用方去猜默认下载目录。
+- adapter 必须返回简洁 stdout 摘要，包含 `ok`、`output_path`、`adapter`、失败原因；stdout 可用 JSON，但不要把 JSON 持久化为 repo artifact。
+- adapter 的 auth、账号、模型参数、真实命令行写在 runtime-specific adapter 文档或脚本注释中，不写进 core skill。
 
 ### 5.5 视频生成：即梦 CLI adapter
 
@@ -231,6 +239,14 @@ episodes/ep001/videos/clip-01/selected.mp4
 - prompt 仍由 Plotloom skills 生产，不在 adapter 内临时拼凑。
 - 如果即梦 CLI 输出格式变化，adapter 吸收变化，repo contract 不变。
 
+MVP 可执行契约：
+
+- adapter 每次只生成一个候选视频。
+- adapter 必须支持 dry-run，显示即将调用的 prompt section、参考图、输出路径、时长/画幅 hint。
+- adapter 必须等待或轮询即梦 CLI 任务完成，并把最终视频保存为指定的 `candidates/vNNN.mp4`。
+- adapter 失败时必须保留错误摘要和必要日志，但日志不进入 series repo 的核心 contract。
+- adapter 不自动写 `selected.mp4`；只有用户接受候选后，skill 才执行 selected 落盘。
+
 ### 5.6 视频拼接：ffmpeg / ffprobe
 
 MVP 拼接选型：ffmpeg + ffprobe。
@@ -261,6 +277,19 @@ episodes/ep001/videos/final.mp4
 - 不做完整剪辑系统。
 - 不做复杂字幕、BGM、混音、调色。
 
+默认归一化 profile：
+
+```text
+container: mp4
+video: h264
+audio: aac when audio exists
+aspect: 9:16 preferred for short drama
+resolution: preserve source if compatible; otherwise normalize to a single vertical profile
+fps: preserve source if compatible; otherwise normalize to a single fps
+```
+
+具体 resolution / fps 可在实现时按即梦 CLI 输出确定；设计层只要求 final.mp4 兼容可播放。
+
 ### 5.7 飞书交付：nova-lark / lark-cli
 
 MVP 飞书交付选型：复用 `nova-lark` / `lark-cli`。
@@ -277,6 +306,12 @@ MVP 飞书交付选型：复用 `nova-lark` / `lark-cli`。
 - Feishu 是 delivery adapter，不是状态中心。
 - 不把候选选择、生产进度、任务状态写进 Feishu 作为唯一事实源。
 - 真实状态来自 series repo 文件。
+
+MVP 可执行契约：
+
+- adapter 必须支持 dry-run，输出将发送的 target、media path、message text。
+- adapter 必须校验媒体文件存在，并在上传失败时返回简洁错误摘要。
+- adapter 只负责发送媒体和提示，不负责记录用户选择；用户选择最终必须体现为 repo 中的 `selected.*` 文件。
 
 ## 6. Repo Registry 设计
 
@@ -374,6 +409,37 @@ Contract vs suggestion：
 | `final.mp4` | contract | MVP 成片输出 |
 | `notes.md` | suggestion | 可选说明 |
 | `episode-card.md` | optional contract | 需要意图锚点时使用 |
+
+### 7.1 Selected 落盘语义
+
+候选被用户接受后，使用 copy 语义写入 `selected.*`：
+
+- 保留原始 `candidates/vNNN.*`。
+- 将被接受候选复制为同目录下的 `selected.*`。
+- 如果已有 `selected.*`，覆盖前先备份为 `selected-prev-YYYYMMDD-HHMMSS.*`。
+- 不使用 symlink 作为 MVP 默认，避免跨 agent / 跨机器 / 打包交付时路径失效。
+- `selected.*` 是当前有效选择；没有 `selected.*` 就不能视为该资产/clip 已被用户接受。
+
+### 7.2 媒体 Git 策略
+
+MVP 不强制 series repo 使用 Git。若用户把 series repo 放进 Git，默认建议忽略重媒体和生成候选：
+
+```gitignore
+# Plotloom generated media
+**/videos/**/*.mp4
+**/videos/**/*.mov
+**/videos/**/*.webm
+**/images/**/candidates/*
+**/assets/**/candidates/*
+
+# Keep selected still images optional; large teams may choose Git LFS later.
+```
+
+原则：
+
+- Markdown / TOML 创作源适合提交。
+- 大视频和批量候选图默认本地保留或后续接 Git LFS / 对象存储。
+- `selected.*` 是否提交由具体 repo 决定；MVP core 不强制。
 
 ## 8. Skill Graph 设计
 
@@ -600,10 +666,24 @@ scripts/
 脚本设计规则：
 
 - 只做确定性动作。
-- 只输出 JSON 或简洁文本，方便 agent 读取。
+- 只向 stdout 输出 JSON 或简洁文本，方便 agent 读取。
+- stdout JSON 只是工具返回值，不是 first-party repo artifact。
+- 不在 series repo 中持久化 `manifest.json`、`media-info.json`、`repo-state.json`、`workflow-state.json` 等状态/清单文件。
 - 不做创作判断。
 - 不长期运行。
 - 不持有后台状态。
+
+最小错误分类：
+
+```text
+missing_input        # 必需文件不存在
+adapter_unavailable # 外部 CLI / auth / adapter 不可用
+generation_failed   # 图片/视频生成失败
+invalid_media       # 媒体探测或兼容检查失败
+delivery_failed     # 飞书或其他交付失败
+```
+
+错误分类只用于 agent 报告和重试决策，不形成 workflow state。
 
 ## 11. 测试策略
 
@@ -715,10 +795,12 @@ MVP 成功标准：用户在飞书收到可播放的 EP001 final.mp4，并且后
 1. `using-plotloom` + registry/repo discovery script。
 2. `plotloom-create-series` + repo skeleton/template。
 3. `plotloom-write-video-prompts` + `translate-video-prompts-en`。
-4. `plotloom-design-character-grid` + Codex imagegen adapter。
-5. `plotloom-draw-video-clip` + 即梦 CLI adapter。
-6. `plotloom-deliver` + nova-lark。
-7. `plotloom-stitch-clips` + ffmpeg/ffprobe。
-8. fake-heiress-reboot end-to-end demo。
+4. path/version helper + selected copy/backup semantics。
+5. fake image/video/delivery adapters，先跑通 repo contract。
+6. `plotloom-stitch-clips` + ffmpeg/ffprobe。
+7. `plotloom-deliver` + nova-lark dry-run / real send。
+8. `plotloom-design-character-grid` + Codex imagegen adapter。
+9. `plotloom-draw-video-clip` + 即梦 CLI adapter。
+10. fake-heiress-reboot end-to-end demo。
 
 每一步都以 repo artifact 是否正确落盘为验收，不以“流程看起来跑了”为验收。

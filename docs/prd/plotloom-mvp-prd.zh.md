@@ -277,7 +277,7 @@ assets/cast/<character-slug>/character-grid.png
 
 - 主角 / 核心角色在视频生成前必须有 `character-grid.png`。
 - 路人 / 一次性背景角色不需要 character grid。
-- 如果重做角色，要重新生成整张 character grid。
+- 如果重做角色，要重新生成整张 character grid；`character-grid.png` 永远是当前有效引用，`character-grid-vN.png` 只作为历史版本或重生成归档。
 - 不把 grid 里的单格当作候选图。
 - MVP 不为 cast asset 创建 `selected.png`。
 
@@ -443,6 +443,13 @@ episodes/ep001/videos/final.mp4
 如果 clips 不兼容，agent 必须先归一化，或停下来报告问题。
 
 这不是完整剪辑系统，只是把已接受 clips 拼成一集可播放视频的最小能力。
+
+候选接受后的落盘规则：
+
+- 保留原始 `candidates/vNNN.mp4`。
+- 用户接受后，把候选复制为同目录 `selected.mp4`。
+- 如果已有 `selected.mp4`，覆盖前先备份为 `selected-prev-YYYYMMDD-HHMMSS.mp4`。
+- MVP 默认不用 symlink，避免跨 agent / 跨机器交付时路径失效。
 
 ## 11. Delivery
 
@@ -651,6 +658,7 @@ plotloom-model-adapter-optimizer
 - 长季完整剧本生成
 - 强制 Git 或 GitHub 集成
 - YAML / JSON artifact schema
+- 持久化 `manifest.json` / `media-info.json` / `repo-state.json` / `workflow-state.json` 等状态或清单文件
 
 ## 18. MVP 成功标准
 
