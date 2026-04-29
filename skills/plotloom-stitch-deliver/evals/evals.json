@@ -1,0 +1,36 @@
+{
+  "skill_name": "plotloom-stitch-deliver",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "把 ep001 的 selected clips 拼成 final.mp4。",
+      "expected_output": "Finds selected clips, probes, stitches, probes final.",
+      "files": [],
+      "expectations": [
+        "Uses ffprobe/ffmpeg helpers",
+        "Writes final.mp4",
+        "Verifies nonzero/probeable output"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "clip-02 还没 selected，也先拼吧。",
+      "expected_output": "Stops and reports missing selected clip.",
+      "files": [],
+      "expectations": [
+        "Reports exact missing path",
+        "Does not mutate candidates"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "拼完发飞书。",
+      "expected_output": "Delivers only after final verification; repo final remains canonical.",
+      "files": [],
+      "expectations": [
+        "Keeps Feishu as delivery not state center",
+        "Includes delivery note"
+      ]
+    }
+  ]
+}

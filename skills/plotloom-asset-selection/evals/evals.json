@@ -1,0 +1,46 @@
+{
+  "skill_name": "plotloom-asset-selection",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "看看这个 v001.mp4 能不能选为 selected.mp4。",
+      "expected_output": "Reviews candidate and chooses accept/reroll/revise/ask_user.",
+      "files": [],
+      "expectations": [
+        "Uses rubric evidence",
+        "Does not silently choose if ambiguous",
+        "Uses select_candidate.py only after accept"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "这个视频人物脸飘了，但剧情动作对。",
+      "expected_output": "Recommends reroll or revise depending whether drift is sample-specific/systematic.",
+      "files": [],
+      "expectations": [
+        "Names failure category",
+        "Preserves candidates"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "已有 selected.mp4，替换成 v002.mp4。",
+      "expected_output": "Backs up previous selected before copy.",
+      "files": [],
+      "expectations": [
+        "Mentions selected-prev timestamp backup"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "这个 character-grid.png 看起来有几格脸不一样，能不能选为角色参考图？",
+      "expected_output": "Reviews image candidate consistency before accepting as character-grid.png.",
+      "files": [],
+      "expectations": [
+        "Checks identity consistency across panels",
+        "Can recommend revise_prompt or reroll for image-specific failures",
+        "Does not copy to selected without accept decision"
+      ]
+    }
+  ]
+}

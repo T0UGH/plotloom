@@ -1,0 +1,48 @@
+{
+  "skill_name": "plotloom-episode-card",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "基于已有 series.md/characters.md，给 ep002 做一个 60 秒 episode card，要有反转。",
+      "expected_output": "Writes lean episode-card.md with hook, conflict, escalation, reversal, ending handoff.",
+      "files": [],
+      "expectations": [
+        "Does not create mandatory script.md",
+        "Includes required characters/assets",
+        "Hands off to shot prompts"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "下一集发生啥你定一下，别写完整剧本。",
+      "expected_output": "Creates a concise intent card only.",
+      "files": [],
+      "expectations": [
+        "Keeps episode card lean",
+        "Includes visible opening hook",
+        "Avoids full storyboard/script"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "没有 characters.md，但我想写 ep001 卡片。",
+      "expected_output": "Stops and hands off to series bible.",
+      "files": [],
+      "expectations": [
+        "Reports missing series context",
+        "Does not invent core character bible"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "这集我想要完整 script.md 和 storyboard.md，你先直接生成吧。",
+      "expected_output": "Recognizes full script/storyboard as outside default MVP and asks/flags scope before expanding.",
+      "files": [],
+      "expectations": [
+        "Does not silently create mandatory script.md/storyboard.md",
+        "Explains episode-card boundary",
+        "Asks for explicit scope confirmation"
+      ]
+    }
+  ]
+}

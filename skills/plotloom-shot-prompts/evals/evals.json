@@ -1,0 +1,37 @@
+{
+  "skill_name": "plotloom-shot-prompts",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "把 ep001 episode-card 转成即梦/Seedance 可用的视频提示词，两段，每段 15 秒。",
+      "expected_output": "Creates continuous video prompt tasks, not shot-list model calls.",
+      "files": [],
+      "expectations": [
+        "Each clip has one primary timeline",
+        "Includes ending handoff",
+        "Stops before submission"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "角色图在 assets/cast/lin-qiao/character-grid.png，写 clip-01，必须保持脸和衣服一致。",
+      "expected_output": "References character-grid with explicit continuity rules.",
+      "files": [],
+      "expectations": [
+        "Uses exact reference path",
+        "Defines stable identity anchors",
+        "Avoids conflicting camera instructions"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "这个模型需要英文，帮我出英文版但别改剧情。",
+      "expected_output": "Creates video-prompts-en.md preserving source intent.",
+      "files": [],
+      "expectations": [
+        "States no story changes during translation",
+        "Keeps source clip ids"
+      ]
+    }
+  ]
+}

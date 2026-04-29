@@ -1,27 +1,42 @@
 # Episode {{episode_number}} Video Prompts
 
 ## clip-01
-- Duration hint: 15-20s
-- Reference images:
-  - `assets/cast/{{character_slug}}/character-grid.png` — identity and outfit continuity
+- Source beat / episode-card anchor:
+- Duration hint: 8-20s
+- Adapter target: Seedance / Dreamina / fake / other
+- Reference images and purpose:
+  - `assets/cast/{{character_slug}}/character-grid.png` — identity, outfit, expression continuity
+- Optional previous reference:
+  - previous clip / last frame:
 - Intent:
-- Cinematic timeline beats:
-  1.
-  2.
-  3.
+- Single cinematic moment:
+- Timeline beats:
+  - 0-3s:
+  - 3-6s:
+  - 6-9s:
+  - 9-12s:
+  - 12-15s:
 - Character continuity rules:
+- Environment continuity:
 - Camera motion:
-- Dialogue window:
+- Dialogue / audio window:
+- Negative constraints / avoid:
 - Ending frame / handoff point:
 - Rerun notes:
 
 ## clip-02
-- Duration hint: 15-20s
-- Reference images:
+- Source beat / episode-card anchor:
+- Duration hint: 8-20s
+- Adapter target:
+- Reference images and purpose:
+- Optional previous reference:
 - Intent:
-- Cinematic timeline beats:
+- Single cinematic moment:
+- Timeline beats:
 - Character continuity rules:
+- Environment continuity:
 - Camera motion:
-- Dialogue window:
+- Dialogue / audio window:
+- Negative constraints / avoid:
 - Ending frame / handoff point:
 - Rerun notes:

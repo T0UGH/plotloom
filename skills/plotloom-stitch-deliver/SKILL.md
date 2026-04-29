@@ -1,8 +1,9 @@
 ---
 name: plotloom-stitch-deliver
 description: >-
-  Stitches selected Plotloom video clips into final.mp4 and prepares delivery.
-  Use when required clip folders have selected.mp4 files.
+  Stitches selected Plotloom clips into `final.mp4` and prepares delivery. Use when the user asks to stitch clips,
+  assemble an episode, concat selected videos, make final.mp4, probe media, or deliver a verified Plotloom episode to
+  Feishu/Lark after `episodes/epXXX/videos/clip-*/selected.mp4` files exist.
 ---
 
 # Plotloom Stitch and Deliver
@@ -17,17 +18,29 @@ Use after all required `episodes/epXXX/videos/clip-*/selected.mp4` files exist.
 
 ## Outputs
 - `episodes/epXXX/videos/final.mp4`
-- Optional Feishu/Lark delivery message or uploaded file.
+- Optional delivery note and Feishu/Lark delivery message or uploaded file.
+
+## Read These Resources When...
+- Read `references/ffmpeg.md` before probing or stitching.
+- Use `templates/delivery-note.md` after final verification or delivery.
+- Use repo-level `scripts/ffprobe_media.py` and `scripts/stitch_ffmpeg.py` for deterministic work.
 
 ## Workflow
 1. Find selected clips in episode clip order.
 2. Stop if any required selected clip is missing.
-3. Use ffprobe helper to inspect compatibility.
+3. Use ffprobe helper to inspect each input.
 4. Use ffmpeg helper to stitch or normalize + stitch.
 5. Save `episodes/epXXX/videos/final.mp4`.
-6. Verify the final file exists and is playable/probeable.
+6. Verify final file exists, is probeable, has nonzero duration, and matches expected clip count/order.
 7. Deliver via nova-lark / lark-cli when requested.
 8. Keep Feishu as delivery, not state center.
+
+## Final Verification Checklist
+- `final.mp4` exists.
+- `ffprobe` returns success.
+- duration is nonzero.
+- source clip order is correct.
+- no prompts/candidates/selection notes were mutated during stitch.
 
 ## Stop Conditions
 Stop after final probe and optional delivery. Do not mutate prompts, candidates, or selection notes.

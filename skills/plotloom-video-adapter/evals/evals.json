@@ -1,0 +1,47 @@
+{
+  "skill_name": "plotloom-video-adapter",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "先不要花钱，跑 fake adapter 给 clip-01 一个 v001.mp4。",
+      "expected_output": "Uses fake adapter by default and writes candidate path.",
+      "files": [],
+      "expectations": [
+        "Checks prompt exists",
+        "Outputs candidates/v001.mp4 path",
+        "Does not claim creative quality"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "用即梦真跑一下这个 clip。",
+      "expected_output": "Runs Dreamina only after preflight for login/maestro/quota.",
+      "files": [],
+      "expectations": [
+        "Mentions user_credit preflight",
+        "Records queue submit_id visibly if queued",
+        "Does not store credentials"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "一次给我生成三个候选。",
+      "expected_output": "Rejects/defers batch generation for MVP, one candidate at a time.",
+      "files": [],
+      "expectations": [
+        "Explains MVP one-candidate rule"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "这个即梦 submit_id 已经排队了，你帮我查一下状态，成功就下载到 clip-01/candidates/v001.mp4。",
+      "expected_output": "Queries existing Dreamina submit_id and downloads only when generated, preserving visible queue status.",
+      "files": [],
+      "expectations": [
+        "Uses query_result with --download_dir",
+        "Records queueing status visibly if still queued",
+        "Does not create hidden runtime DB"
+      ]
+    }
+  ]
+}

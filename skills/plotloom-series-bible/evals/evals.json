@@ -1,0 +1,37 @@
+{
+  "skill_name": "plotloom-series-bible",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我有个短剧想法：外卖员其实是失踪千金，帮我开一个 Plotloom 系列 repo，并先写系列设定和角色。",
+      "expected_output": "Creates/updates series.md and characters.md, mentions repo detection/registry, stops before media generation.",
+      "files": [],
+      "expectations": [
+        "Includes repeatable series engine",
+        "Defines core cast with visual anchors and character-grid asset paths",
+        "Does not generate video or image candidates"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "这个 series.md 太像一集小品了，帮我补成能拍十集的短剧引擎。",
+      "expected_output": "Improves repeatable conflict engine and first-three-episode runway without creating unrelated artifacts.",
+      "files": [],
+      "expectations": [
+        "Explains why the engine can sustain episodes",
+        "Preserves existing context",
+        "No hidden runtime state"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "家目录下面好几个 Plotloom 项目，你继续那个霸总短剧吧。",
+      "expected_output": "Inspects ~/plotloom.toml and asks if ambiguous instead of guessing.",
+      "files": [],
+      "expectations": [
+        "Mentions registry ambiguity handling",
+        "Does not overwrite repo files silently"
+      ]
+    }
+  ]
+}
