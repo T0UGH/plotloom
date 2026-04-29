@@ -109,9 +109,11 @@ video-prompts-en.md  # 英文模型执行版，需要时生成
 
 MVP 中，创作内容使用 Markdown。
 
-如果后续确实需要结构化配置，使用 TOML。
+如果需要结构化配置，使用 TOML；但只做轻量配置，不做代码化 runtime。
 
 核心 repo artifact 不使用 YAML 或 JSON。
+
+MVP 增加一个 home 级 repo 索引：`~/plotloom.toml`。Hermes 场景下 agent 通常从 home 目录启动，因此用这个文件列出有哪些短剧 series repo、目录在哪里，方便 agent 选择或继续已有 repo。它只是 repo registry，不是任务系统、进度系统或控制器。
 
 ### 4.4 用户中文，模型英文
 
@@ -154,6 +156,30 @@ Feishu 在 MVP 范围内，因为贵平主要通过飞书和 AI chat 交互，�
 ## 5. MVP Series Repo 结构
 
 一个 Plotloom repo 表示一部短剧 / 一个 series。
+
+Home 级 repo 索引：
+
+```toml
+# ~/plotloom.toml
+
+[[repos]]
+slug = "example-series"
+title = "Example Series"
+path = "~/plotloom_repo/example-series"
+status = "active"
+
+[[repos]]
+slug = "another-series"
+title = "Another Series"
+path = "~/workspace/short-dramas/another-series"
+status = "paused"
+```
+
+说明：
+
+- `~/plotloom.toml` 只记录 repo 列表和路径，方便从 Hermes home 快速发现已有短剧 repo。
+- 不在其中记录任务状态、生产进度、抽卡结果或 workflow step。
+- 单个 series repo 仍然是上下文和素材的真实存放位置。
 
 默认位置：
 
