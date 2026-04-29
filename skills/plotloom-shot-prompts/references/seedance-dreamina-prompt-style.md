@@ -9,7 +9,7 @@ Seedance prompt ≠ shot list
 Seedance prompt = director brief translated into one continuous narrative timeline
 ```
 
-Each generation task should be a complete 8-20s cinematic moment. A prompt may include multiple camera beats, but it must have one primary timeline.
+Each generation task should be one continuous cinematic moment. Dreamina CLI currently supports 4-15 seconds for Seedance 2.0 family commands, so clamp Dreamina-bound tasks to `--duration=15` when the creative target says 15-20s. A prompt may include multiple camera beats, but it must have one primary timeline.
 
 ## Useful Prompt Formula
 ```text
