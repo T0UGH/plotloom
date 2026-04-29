@@ -130,15 +130,21 @@ MVP 增加一个 home 级 repo 索引：`~/plotloom.toml`。Hermes 场景下 age
 
 Plotloom 不能绑定某个模型、CLI 或 API。
 
-可能变化的工具包括：
+MVP 默认 adapter：
 
-- 即梦 CLI
+- 图片生成：Codex imagegen
+- 视频生成：即梦 CLI
+- 视频拼接：ffmpeg / ffprobe
+- 飞书交付：nova-lark / lark-cli
+
+未来可替换工具包括：
+
 - Seedance / 火山 API
 - 阿里 API
-- 未来的视频/图像模型
+- Kling / Veo / Sora / 其他视频模型
 - 手动 Web UI 工作流
 
-Plotloom core skills 表达短剧生产意图；tool adapter 再把意图翻译成具体模型、CLI、API 或人工操作流程。
+Plotloom core skills 表达短剧生产意图；tool adapter 再把意图翻译成具体模型、CLI、API 或人工操作流程。Codex imagegen 和即梦 CLI 是 MVP adapter，不是 Plotloom core。
 
 ### 4.6 Feishu 在 MVP 内，但不是唯一出口
 
@@ -663,7 +669,6 @@ Plotloom MVP 成功的标准：
 
 这些留到后续，不作为 MVP blocker：
 
-- 第一个具体 image/video model adapter 选哪个？
 - 是否为媒体-heavy repo 支持 Git / LFS？
 - 是否做 Codex App preview adapter？
 - production loop 跑通后是否加 market-sense？
