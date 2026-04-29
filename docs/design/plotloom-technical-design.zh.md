@@ -164,6 +164,7 @@ skills/
 - `SKILL.md` 写 runtime-neutral 指令，不出现某个 agent 的专用 tool 名称。
 - runtime-specific 安装、路径、权限放 adapter docs。
 - scripts 只能做确定性工程动作，不能替代 creative judgment。
+- 默认优先把能力写进 prompt / skill 指令；只有当动作需要确定性文件操作、媒体探测、CLI glue 或重复验证时才写 script。
 
 ### 5.4 图片生成：Codex imagegen adapter
 
@@ -650,6 +651,28 @@ MVP 实现：nova-lark / lark-cli。
 
 ## 10. Scripts 设计
 
+核心原则：**多写 prompt，少写脚本**。
+
+Plotloom 的主要产能应该来自高质量 `SKILL.md`、references、templates 和 prompt 指令，而不是不断堆 Python 代码。脚本只用于确定性、可验证、重复执行容易出错的工程动作。
+
+适合写成 prompt / skill 的内容：
+
+- series 构思与角色设定。
+- episode card。
+- video prompt 编写与改写。
+- 中英 prompt 转换。
+- image/video 生成意图说明。
+- 候选审美判断和 rerun 建议。
+
+适合写成 script 的内容：
+
+- `~/plotloom.toml` 读写。
+- repo skeleton 创建。
+- 路径、slug、版本号计算。
+- ffprobe / ffmpeg 包装。
+- candidate -> selected 的 copy/backup。
+- adapter dry-run / 文件存在性校验。
+
 MVP scripts 放在 skill 目录或 repo-level `scripts/` 中。
 
 建议 scripts：
@@ -792,15 +815,16 @@ MVP 成功标准：用户在飞书收到可播放的 EP001 final.mp4，并且后
 
 建议按下面顺序落地：
 
-1. `using-plotloom` + registry/repo discovery script。
-2. `plotloom-create-series` + repo skeleton/template。
-3. `plotloom-write-video-prompts` + `translate-video-prompts-en`。
-4. path/version helper + selected copy/backup semantics。
-5. fake image/video/delivery adapters，先跑通 repo contract。
-6. `plotloom-stitch-clips` + ffmpeg/ffprobe。
-7. `plotloom-deliver` + nova-lark dry-run / real send。
-8. `plotloom-design-character-grid` + Codex imagegen adapter。
-9. `plotloom-draw-video-clip` + 即梦 CLI adapter。
-10. fake-heiress-reboot end-to-end demo。
+1. 先写 `SKILL.md` / templates / prompt contracts，明确 agent 如何做。
+2. `using-plotloom` + registry/repo discovery script。
+3. `plotloom-create-series` + repo skeleton/template。
+4. `plotloom-write-video-prompts` + `translate-video-prompts-en`。
+5. path/version helper + selected copy/backup semantics。
+6. fake image/video/delivery adapters，先跑通 repo contract。
+7. `plotloom-stitch-clips` + ffmpeg/ffprobe。
+8. `plotloom-deliver` + nova-lark dry-run / real send。
+9. `plotloom-design-character-grid` + Codex imagegen adapter。
+10. `plotloom-draw-video-clip` + 即梦 CLI adapter。
+11. fake-heiress-reboot end-to-end demo。
 
 每一步都以 repo artifact 是否正确落盘为验收，不以“流程看起来跑了”为验收。

@@ -85,6 +85,8 @@ Plotloom 是 skill graph：
 
 Plotloom 要避免生成不必要的中间文件。
 
+工程实现也遵守：**多写 prompt，少写脚本**。优先把能力沉淀成 `SKILL.md`、references、templates 和 prompt 指令；只有确定性文件操作、媒体探测、CLI glue、版本路径计算、可重复验证这类动作才写 script。
+
 每一集默认只允许这些 prompt artifact：
 
 ```text
