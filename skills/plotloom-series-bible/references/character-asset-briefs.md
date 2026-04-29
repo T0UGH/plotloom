@@ -43,6 +43,24 @@ For each core character, capture:
 - `do-not-change` invariants;
 - target file path: `assets/cast/<slug>/character-grid.png`.
 
+## Codex Imagegen2 API Adapter
+Use the private `codex-imagegen2-api` skill from `T0UGH/agent-skills` when generating character grids through Codex. On this machine it is installed for Nova at:
+
+```text
+/Users/wangguiping/.hermes/profiles/nova/skills/personal/codex-imagegen2-api
+```
+
+Command shape:
+
+```bash
+python3 /Users/wangguiping/.hermes/profiles/nova/skills/personal/codex-imagegen2-api/scripts/codex_imagegen2.py \
+  --prompt-file /path/to/character-grid-prompt.txt \
+  --output-dir /path/to/series-repo/assets/cast/<character-slug> \
+  --filename character-grid
+```
+
+Always pass `--output-dir` so the generated image is copied into the Plotloom series repo instead of remaining only under `$CODEX_HOME/generated_images`.
+
 ## Avoid
 - Style-locking to a third-party IP unless the user explicitly asks.
 - Treating a generated image as accepted without asset selection.
