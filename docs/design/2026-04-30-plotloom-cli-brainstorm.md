@@ -119,14 +119,58 @@ plotloom doctor [--repo PATH]
 - 更新 `~/plotloom.toml`。
 - 不生成剧情内容。
 
-### 4.3 Character / asset helpers
+### 4.3 Image / asset generation and asset helpers
 
-目标：帮助 agent 稳定归档图片资产，不负责生成审美判断。
+目标：覆盖短剧生产里必需的素材图片生成与归档，包括角色设定图、场景图、封面图。CLI 负责调用图片 adapter、落候选文件、选择归档；不负责审美判断。
+
+素材图片类型：
+
+```text
+cast character-grid     # 核心角色 turnaround / character sheet
+scene selected/candidate # 可复用场景图
+cover candidate/selected # 单集封面图
+reference still          # 视频生成用的首帧/尾帧/参考图
+```
+
+候选命令：
+
+```bash
+plotloom image submit --repo PATH --kind cast --character lin-qiao --adapter codex-imagegen
+plotloom image submit --repo PATH --kind scene --scene boardroom --adapter codex-imagegen
+plotloom image submit --repo PATH --kind cover --episode ep001 --adapter codex-imagegen
+plotloom image submit --repo PATH --kind reference --episode ep001 --clip clip-01 --adapter codex-imagegen
+
+plotloom image poll --repo PATH --kind cover --episode ep001
+plotloom image list --repo PATH --kind cast --character lin-qiao
+plotloom image info assets/cast/lin-qiao/character-grid.png
+```
+
+对于同步图片 adapter，例如 Codex imagegen2 helper，`submit` 可以直接生成并复制到目标目录：
+
+```text
+assets/cast/<character>/character-grid.png
+assets/scenes/<scene>/candidates/vNNN.png
+episodes/ep001/images/covers/candidates/vNNN.png
+episodes/ep001/images/references/clip-01/candidates/vNNN.png
+```
+
+对于异步图片 adapter，沿用 video 的 task receipt 思路：
+
+```toml
+adapter = "codex-imagegen"
+kind = "cover"
+episode = "ep001"
+status = "submitted"
+prompt_file = "episodes/ep001/cover-prompt.md"
+```
+
+资产导入 / 选择命令：
 
 ```bash
 plotloom asset import --repo PATH --kind cast --character lin-qiao --file /tmp/x.png --as character-grid
 plotloom asset import --repo PATH --kind scene --scene boardroom --file /tmp/x.png --candidate
 plotloom asset select --candidate assets/scenes/boardroom/candidates/v001.png
+plotloom asset select --candidate episodes/ep001/images/covers/candidates/v001.png
 plotloom asset info assets/cast/lin-qiao/character-grid.png
 ```
 
@@ -136,6 +180,8 @@ plotloom asset info assets/cast/lin-qiao/character-grid.png
 - selected copy
 - selected-prev backup
 - 文件存在性和类型检查
+- 图片尺寸 / 格式检查
+- 角色 `character-grid.png` 的特殊规则：它是当前有效角色设定图，不是 selected candidate
 
 但不要做“哪个图最好”的判断。
 
@@ -350,6 +396,10 @@ plotloom repos list
 plotloom validate [--repo PATH]
 plotloom doctor [--repo PATH]
 
+plotloom image submit --kind cast --character lin-qiao --adapter codex-imagegen
+plotloom image submit --kind cover --episode ep001 --adapter codex-imagegen
+plotloom image list --kind cover --episode ep001
+
 plotloom video submit --episode ep001 --clip clip-01 --adapter mock|dreamina|volcengine-seedance
 plotloom video poll --episode ep001 --clip clip-01
 plotloom select PATH/TO/candidates/v001.mp4
@@ -360,6 +410,7 @@ plotloom stitch --episode ep001
 
 ```bash
 plotloom prompt extract --episode ep001 --clip clip-01
+plotloom asset import/select
 plotloom media probe FILE
 plotloom candidates list PATH
 plotloom package --episode ep001
@@ -384,9 +435,12 @@ plotloom publish
   -> agent/skills 写 series.md characters.md episode-card.md video-prompts.md
   -> plotloom validate
 
-角色/场景资产
-  -> agent 调 imagegen/Codex
-  -> plotloom asset import/select
+角色/场景/封面图片
+  -> agent/skills 写图片 brief / prompt
+  -> plotloom image submit --adapter codex-imagegen
+  -> plotloom image poll/list
+  -> Feishu 回传候选
+  -> plotloom asset select 或 character-grid 归档
 
 视频生成
   -> agent 写 video-prompts-en.md
@@ -426,9 +480,10 @@ volcengine-seedance submit/poll/download
 Dreamina submit/query/download 包装
 ```
 
-第三阶段：asset/prompt helper
+第三阶段：image + asset/prompt helper
 
 ```text
+image submit/list/poll
 asset import/select
 prompt extract/check
 ```
