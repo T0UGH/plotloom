@@ -85,6 +85,104 @@ Thin Adapters
 - adapter 决定“具体怎么调用某个工具”。
 - agent host 只负责加载 skill、执行命令、读写文件、向用户交互。
 
+### 4.1 Plotloom Repo 目录设计
+
+Plotloom 自身 repo 采用“多 skill 的 skill-pack repo”结构，而不是单个巨型 `SKILL.md`，也不是 runtime 项目。
+
+```text
+plotloom/
+  README.md
+
+  docs/
+    prd/
+      plotloom-mvp-prd.zh.md
+    design/
+      plotloom-technical-design.zh.md
+    plans/
+    decisions/
+
+  skills/
+    plotloom-series-bible/
+      SKILL.md
+      templates/
+        series.md
+        characters.md
+    plotloom-episode-card/
+      SKILL.md
+      templates/
+        episode-card.md
+    plotloom-shot-prompts/
+      SKILL.md
+      references/
+        visual-continuity.md
+      templates/
+        shot-list.md
+        image-prompts.md
+        video-prompts.md
+    plotloom-asset-selection/
+      SKILL.md
+      references/
+        selection-rubric.md
+    plotloom-video-adapter/
+      SKILL.md
+      references/
+        dreamina-cli.md
+      templates/
+        adapter-request.md
+    plotloom-stitch-deliver/
+      SKILL.md
+      references/
+        ffmpeg.md
+
+  templates/
+    series-repo/
+      plotloom.toml
+      series.md
+      characters.md
+      assets/
+      episodes/
+      outputs/
+
+  scripts/
+    init_series.py
+    validate_repo.py
+    select_candidate.py
+    ffprobe_media.py
+    stitch_ffmpeg.py
+    adapters/
+      fake_video.py
+      dreamina_cli.py
+
+  adapters/
+    codex.md
+    hermes.md
+    claude-code.md
+    opencode.md
+
+  examples/
+    tiny-series/
+```
+
+目录分工：
+
+| 目录 | 职责 | 是否 core |
+|---|---|---:|
+| `skills/` | agent-neutral 短剧生产 skills，定义创作阶段、输入输出、验收标准 | 是 |
+| `templates/series-repo/` | 新短剧 repo 的最小骨架和初始 artifact 模板 | 是 |
+| `scripts/` | 确定性辅助脚本：初始化、校验、selected copy、ffprobe、ffmpeg、adapter glue | 是，但必须保持薄 |
+| `scripts/adapters/` | 外部工具调用包装，如 fake video、Dreamina CLI | adapter |
+| `adapters/` | Codex / Hermes / Claude Code / OpenCode 的安装与运行说明 | 非 core |
+| `examples/` | tiny demo series，用于端到端验收和回归 | 是 |
+| `docs/` | PRD、技术设计、implementation plan、决策记录 | 是 |
+
+设计约束：
+
+- core workflow 放 `skills/`，不是放 runtime-specific adapter。
+- `adapters/` 只解释不同 agent host 如何加载/使用 Plotloom，不复制整套业务逻辑。
+- `scripts/` 只做确定性动作；创作判断、审美判断、rerun 建议仍写在 skill/prompt 中。
+- `templates/series-repo/` 是创建短剧 repo 的来源；实际生产状态以 series repo 内 Markdown/TOML/media 文件为准。
+- MVP 先实现 core skills + templates + fake adapter + ffmpeg；Codex/Hermes/Claude/OpenCode adapters 等 core 稳定后再补全。
+
 ## 5. 技术选型
 
 ### 5.1 实现语言：Python 优先
@@ -124,40 +222,44 @@ video-prompts-en.md          # 英文模型执行版
 
 ### 5.3 Skill 格式：agent-neutral `SKILL.md` baseline
 
-核心 skill 目录建议：
+核心 skill 目录采用阶段拆分，而不是一个大 skill：
 
 ```text
 skills/
-  using-plotloom/
-    SKILL.md
-    references/
-    scripts/
-    examples/
-  plotloom-create-series/
+  plotloom-series-bible/
     SKILL.md
     templates/
-    scripts/
-  plotloom-design-character-grid/
-    SKILL.md
-    references/
-  plotloom-write-video-prompts/
+      series.md
+      characters.md
+  plotloom-episode-card/
     SKILL.md
     templates/
-  plotloom-translate-video-prompts-en/
+      episode-card.md
+  plotloom-shot-prompts/
     SKILL.md
-  plotloom-draw-image/
+    references/
+      visual-continuity.md
+    templates/
+      shot-list.md
+      image-prompts.md
+      video-prompts.md
+  plotloom-asset-selection/
     SKILL.md
-    scripts/
-  plotloom-draw-video-clip/
+    references/
+      selection-rubric.md
+  plotloom-video-adapter/
     SKILL.md
-    scripts/
-  plotloom-stitch-clips/
+    references/
+      dreamina-cli.md
+    templates/
+      adapter-request.md
+  plotloom-stitch-deliver/
     SKILL.md
-    scripts/
-  plotloom-deliver/
-    SKILL.md
-    scripts/
+    references/
+      ffmpeg.md
 ```
+
+旧命名如 `using-plotloom`、`plotloom-create-series`、`plotloom-draw-video-clip` 可作为内部别名或历史概念，但落地 repo 目录以以上阶段型 skill 名为准。
 
 设计原则：
 
