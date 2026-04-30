@@ -97,6 +97,21 @@ def test_probe_media_raises_media_validation_error_on_ffprobe_failure(tmp_path, 
     assert "Invalid data found" in error.value.message
 
 
+def test_probe_media_raises_media_validation_error_for_wrong_json_shape(tmp_path, monkeypatch):
+    video = tmp_path / "broken.mp4"
+    video.write_bytes(b"not really media")
+
+    def fake_run(cmd, **kwargs):
+        return subprocess.CompletedProcess(cmd, 0, stdout="[]", stderr="")
+
+    monkeypatch.setattr(media_module.subprocess, "run", fake_run)
+
+    with pytest.raises(MediaValidationError) as error:
+        media_module.probe_media(video)
+
+    assert "invalid JSON shape" in error.value.message
+
+
 def test_media_probe_command_json_reports_facts(tmp_path, monkeypatch):
     video = tmp_path / "candidate.mp4"
     video.write_bytes(b"placeholder")
@@ -152,6 +167,67 @@ def test_media_check_command_validates_expected_facts(tmp_path, monkeypatch):
     assert payload["command"] == "media.check"
     assert payload["checks"]["ratio"]["ok"] is True
     assert payload["checks"]["duration"]["ok"] is True
+
+
+def test_media_check_invalid_ratio_fails_before_probe(tmp_path, monkeypatch):
+    video = tmp_path / "candidate.mp4"
+    video.write_bytes(b"placeholder")
+
+    def fail_probe(path):
+        raise AssertionError("probe should not run for invalid ratio")
+
+    monkeypatch.setattr(media_commands, "probe_media", fail_probe)
+
+    result = CliRunner().invoke(main, ["--json", "media", "check", str(video), "--ratio", "bad"])
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["command"] == "media.check"
+    assert payload["error"]["code"] == "BAD_PARAMETER"
+    assert "--ratio" in payload["error"]["message"]
+
+
+def test_media_check_rejects_nan_duration_without_nonstandard_json(tmp_path, monkeypatch):
+    video = tmp_path / "candidate.mp4"
+    video.write_bytes(b"placeholder")
+
+    def fail_probe(path):
+        raise AssertionError("probe should not run for invalid duration")
+
+    monkeypatch.setattr(media_commands, "probe_media", fail_probe)
+
+    result = CliRunner().invoke(main, ["--json", "media", "check", str(video), "--duration", "nan"])
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["command"] == "media.check"
+    assert payload["error"]["code"] == "BAD_PARAMETER"
+    assert "finite" in payload["error"]["message"]
+    assert "NaN" not in result.output
+
+
+def test_media_check_rejects_negative_duration_tolerance_before_probe(tmp_path, monkeypatch):
+    video = tmp_path / "candidate.mp4"
+    video.write_bytes(b"placeholder")
+
+    def fail_probe(path):
+        raise AssertionError("probe should not run for invalid tolerance")
+
+    monkeypatch.setattr(media_commands, "probe_media", fail_probe)
+
+    result = CliRunner().invoke(
+        main,
+        ["--json", "media", "check", str(video), "--duration", "3.5", "--duration-tolerance", "-0.1"],
+    )
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["command"] == "media.check"
+    assert payload["error"]["code"] == "BAD_PARAMETER"
+    assert "--duration-tolerance" in payload["error"]["message"]
 
 
 def test_media_probe_command_json_reports_ffprobe_failure(tmp_path, monkeypatch):

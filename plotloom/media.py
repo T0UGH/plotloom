@@ -67,6 +67,8 @@ def probe_media(path: Path) -> MediaFacts:
         payload = json.loads(result.stdout or "{}")
     except json.JSONDecodeError as error:
         raise MediaValidationError(f"ffprobe returned invalid JSON for {target}: {error}") from error
+    if not isinstance(payload, dict):
+        raise MediaValidationError(f"ffprobe returned invalid JSON shape for {target}: expected object")
 
     streams = payload.get("streams", [])
     if not isinstance(streams, list):
