@@ -34,7 +34,7 @@ Use when the user has a short-drama idea but the current repo does not yet have 
 ## Workflow
 1. Detect whether the current directory or a parent is already a Plotloom series repo by looking for `plotloom.toml`, `series.md`, `characters.md`, or `episodes/`.
 2. If no repo is active, inspect `~/plotloom.toml` and decide whether to continue an existing series or create a new repo. Ask only if multiple plausible repos exist.
-3. When creating a new repo, use the series repo template or repo-level `scripts/init_series.py` for deterministic scaffolding only. Do not put story logic in scripts.
+3. When creating a new repo, use `plotloom init <slug> --title <title>` for deterministic scaffolding only. Do not put story logic in the CLI.
 4. Develop enough long-form context so episode 1 is not a one-off skit: premise, audience/tone, recurring conflict engine, core cast, season arc, and first-three-episode runway.
 5. For each core character, define stable visual anchors and the required `assets/cast/<slug>/character-grid.png` brief: front/side/back, expression grid, wardrobe lock, props, palette, and do-not-change invariants.
 6. Stop before image generation, video generation, candidate selection, or stitching.

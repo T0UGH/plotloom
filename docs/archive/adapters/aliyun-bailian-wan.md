@@ -1,5 +1,7 @@
 # Aliyun Bailian Wan Adapter Notes
 
+> Archived: this adapter is not implemented in the current Plotloom CLI. The active video adapters are `dreamina-cli`, `volcengine-seedance`, and local `mock`.
+
 ## Purpose
 
 Document how Plotloom should call Alibaba Cloud Model Studio / Bailian Wan video APIs. This replaces the earlier fal / HappyHorse route in the first real-provider implementation plan.

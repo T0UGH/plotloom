@@ -1,13 +1,14 @@
-# Fake Video Adapter Reference
+# Mock Video Adapter Reference
 
 ## Purpose
-The fake adapter runs Plotloom contract tests without spending quota or waiting for a real model. It creates or copies a deterministic mp4 to the requested candidate path.
+The mock adapter runs Plotloom contract tests without spending quota or waiting for a real model. It creates a deterministic mp4 candidate through the normal `plotloom video submit` path.
 
 ## Command Shape
 ```bash
-python scripts/adapters/fake_video.py \
-  --prompt-file episodes/ep001/video-prompts.md \
-  --output episodes/ep001/videos/clip-01/candidates/v001.mp4
+plotloom --repo . video submit \
+  --episode ep001 \
+  --clip clip-01 \
+  --adapter mock
 ```
 
 ## What It Proves
@@ -23,4 +24,4 @@ python scripts/adapters/fake_video.py \
 - Commercial quality.
 
 ## When to Use
-Use fake by default in MVP tests, CI-like checks, and examples. Use real Dreamina only when the user explicitly asks for real generation and preflight passes.
+Use `mock` by default in tests, CI-like checks, and examples. Use real Dreamina or VolcEngine only when the user explicitly asks for real generation and preflight passes.

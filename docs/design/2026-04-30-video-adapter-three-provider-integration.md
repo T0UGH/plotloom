@@ -4,6 +4,8 @@
 > Agent: Nova  
 > Scope: 本期同时接入并对比三家视频生成后端，目标是看实际效果、速度、成本、稳定性，而不是提前押注单一模型。
 
+> Archived status: this was the three-provider exploration draft. Current Plotloom CLI uses `dreamina-cli` and `volcengine-seedance` for real video, plus local `mock`; `happyhorse-fal` is archived research.
+
 ## 结论先行
 
 本期视频 adapter 应该同时接入三家：

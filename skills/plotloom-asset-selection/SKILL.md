@@ -23,13 +23,13 @@ Use when image or video candidates exist under `candidates/` and the next step i
 ## Read These Resources When...
 - Read `references/selection-rubric.md` before evaluating candidates.
 - Use `templates/review-note.md` for review output.
-- Use repo-level `scripts/select_candidate.py` only after accept decision.
+- Use `plotloom --repo <repo> select <candidate>` only after accept decision.
 
 ## Workflow
 1. Evaluate candidate against intent, character consistency, visual continuity, short-drama clarity, hook strength, ending handoff, and artifacts.
 2. Choose one decision: `accept`, `reroll`, `revise_prompt`, or `ask_user`.
 3. Ask the user when quality is ambiguous or trade-offs are subjective.
-4. If accepted, run or instruct `scripts/select_candidate.py` to copy the candidate to `selected.*`.
+4. If accepted, run or instruct `plotloom --repo <repo> select <candidate>` to copy the candidate to `selected.*`.
 5. Preserve `candidates/vNNN.*`.
 6. If replacing a selected file, back up old selected as `selected-prev-YYYYMMDD-HHMMSS-ffffff.*`.
 7. For video, process one candidate at a time.

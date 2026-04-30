@@ -7,6 +7,8 @@
 > - `docs/design/2026-04-30-plotloom-cli-technical-design.md`
 > - `docs/design/2026-04-30-plotloom-cli-command-surface.md`
 
+> Current implementation note: this remains a contract design draft and includes some future commands/options. `happyhorse-fal` and `aliyun-bailian-wan` are not active adapters. Current manual provider E2E should cover `dreamina-cli` and `volcengine-seedance`; local E2E should use `mock`.
+
 ## 1. Provider Manual E2E
 
 真实 provider 调用不进入默认自动化测试。第一版只提供 `doctor` + 手动 smoke 命令，避免自动测试误烧钱、误卡队列、误依赖登录态。
@@ -82,82 +84,7 @@ Stop conditions:
 - Dreamina queue is too long for the current manual check.
 - prompt compile produces an empty or full-Markdown prompt.
 
-### 1.2 HappyHorse / fal
-
-Prerequisites:
-
-```text
-FAL_KEY present through env or ~/.plotloom/.env.toml
-fal-client import succeeds
-fal account has funds
-local reference assets are uploadable when using image/reference/video modes
-```
-
-Doctor:
-
-```bash
-plotloom config doctor --adapter happyhorse-fal
-plotloom doctor --adapter happyhorse-fal --deep
-```
-
-Text-to-video smoke:
-
-```bash
-plotloom video submit \
-  --repo ~/plotloom_repo/fake-heiress \
-  --episode ep001 \
-  --clip clip-01 \
-  --adapter happyhorse-fal \
-  --mode text-to-video \
-  --duration 5 \
-  --ratio 9:16 \
-  --resolution 720p
-
-plotloom video poll \
-  --repo ~/plotloom_repo/fake-heiress \
-  --episode ep001 \
-  --clip clip-01 \
-  --adapter happyhorse-fal \
-  --latest
-```
-
-Reference-to-video smoke:
-
-```bash
-plotloom video submit \
-  --repo ~/plotloom_repo/fake-heiress \
-  --episode ep001 \
-  --clip clip-01 \
-  --adapter happyhorse-fal \
-  --mode reference-to-video \
-  --reference-image assets/cast/lin-qiao/character-grid.png \
-  --duration 5 \
-  --ratio 9:16 \
-  --resolution 720p
-```
-
-Expected artifacts:
-
-```text
-episodes/ep001/videos/clip-01/tasks/happyhorse-fal-<request-id>.toml
-episodes/ep001/videos/clip-01/latest-task.toml
-episodes/ep001/videos/clip-01/candidates/vNNN.happyhorse-fal.mp4
-```
-
-Success criteria:
-
-- receipt records endpoint, mode, request id, duration, ratio, resolution, prompt hash.
-- local media inputs are uploaded before submit; receipt may record uploaded URL host/type but not credential values.
-- poll downloads `result.video.url` immediately.
-- media probe records duration, resolution, fps, audio presence.
-
-Cost controls:
-
-- default smoke duration should be 5s for HappyHorse unless user explicitly requests longer.
-- default smoke resolution is 720p.
-- no automatic multi-candidate batch generation.
-
-### 1.3 VolcEngine Seedance
+### 1.2 VolcEngine Seedance
 
 Prerequisites:
 
@@ -266,8 +193,8 @@ Failure JSON:
   "command": "video.submit",
   "error": {
     "code": "MISSING_CONFIG",
-    "message": "FAL_KEY is not configured",
-    "next_step": "Run plotloom config doctor --adapter happyhorse-fal"
+    "message": "ARK_API_KEY is not configured",
+    "next_step": "Run plotloom config doctor --adapter volcengine-seedance"
   }
 }
 ```
@@ -375,8 +302,8 @@ JSON output should include:
   "command": "prompt.compile",
   "episode": "ep001",
   "clip": "clip-01",
-  "adapter": "happyhorse-fal",
-  "mode": "reference-to-video",
+  "adapter": "volcengine-seedance",
+  "mode": "text-to-video",
   "prompt_sha256": "...",
   "prompt_chars": 1200,
   "warnings": []
@@ -520,7 +447,6 @@ built-in default
 Examples:
 
 - `--config PATH` overrides `PLOTLOOM_CONFIG`.
-- `FAL_KEY` env overrides `[adapters.happyhorse-fal].fal_key`.
 - `ARK_API_KEY` env overrides `[adapters.volcengine-seedance].ark_api_key`.
 
 ### 3.2 Environment Mapping
@@ -533,7 +459,6 @@ CODEX_BINARY                 -> [adapters.codex-app-server].codex_binary
 CODEX_APP_SERVER_URL         -> [adapters.codex-app-server].app_server_url
 DREAMINA_BINARY              -> [adapters.dreamina-cli].binary
 DREAMINA_HOME                -> [adapters.dreamina-cli].home
-FAL_KEY                      -> [adapters.happyhorse-fal].fal_key
 ARK_API_KEY                  -> [adapters.volcengine-seedance].ark_api_key
 PLOTLOOM_VOLCENGINE_BASE_URL -> [adapters.volcengine-seedance].base_url
 PLOTLOOM_VOLCENGINE_MODEL    -> [adapters.volcengine-seedance].model
@@ -544,7 +469,6 @@ PLOTLOOM_VOLCENGINE_MODEL    -> [adapters.volcengine-seedance].model
 Never print:
 
 ```text
-FAL_KEY
 ARK_API_KEY
 OAuth code
 QR content
@@ -555,7 +479,6 @@ temporary signed URLs if they contain sensitive tokens
 Allowed diagnostic:
 
 ```text
-FAL_KEY: present via env
 ARK_API_KEY: absent
 Dreamina login: present
 Codex binary: /opt/homebrew/bin/codex
@@ -570,7 +493,6 @@ credential_source = "env"
 Receipt must not record:
 
 ```toml
-fal_key = "..."
 ark_api_key = "..."
 ```
 
@@ -689,15 +611,6 @@ model_version = "seedance2.0fast"
 download_dir = "episodes/ep001/videos/clip-01/candidates"
 ```
 
-HappyHorse / fal:
-
-```toml
-[provider]
-endpoint = "alibaba/happy-horse/text-to-video"
-request_id = "req_..."
-queue_status = "IN_QUEUE"
-```
-
 VolcEngine:
 
 ```toml
@@ -731,8 +644,8 @@ Candidate numbering scans all existing `vNNN.*` in the clip candidate directory,
 
 ```text
 v001.dreamina-cli.mp4
-v002.happyhorse-fal.mp4
-v003.volcengine-seedance.mp4
+v002.volcengine-seedance.mp4
+v003.mock.mp4
 ```
 
 Next candidate is max `NNN + 1`.

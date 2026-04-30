@@ -5,7 +5,7 @@
 > Owner: 贵平  
 > Agent: Nova  
 > Source: PRD discussion + Superpowers-style brainstorm + existing Plotloom MVP skill pack
-> Superseded: This is a historical brainstorm draft. Use `docs/design/2026-04-30-plotloom-cli-technical-design.md` as the canonical CLI design. The canonical design now requires all three real video adapters (`dreamina-cli`, `happyhorse-fal`, `volcengine-seedance`), `~/.plotloom/.env.toml` config, provider-aware prompt compile, and `tasks/*.toml` receipts.
+> Superseded: This is a historical brainstorm draft. Current implementation supports `codex-app-server` for images, `mock` for local video E2E, and `dreamina-cli` / `volcengine-seedance` for real video. `happyhorse-fal` and `aliyun-bailian-wan` are archived research routes, not active adapters.
 
 ## Superseded Notice
 

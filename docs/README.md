@@ -1,4 +1,31 @@
-# Early Documents Index
+# Plotloom Docs
+
+All project documents live under `docs/`. Root-level documentation should stay limited to `README.md` and packaging metadata.
+
+## Active Adapter Docs
+
+- [Codex app server image adapter](./adapters/codex-app-server.md)
+- [Dreamina CLI video adapter](./adapters/dreamina-cli.md)
+- [VolcEngine Seedance video adapter](./adapters/volcengine-seedance.md)
+
+## Active Host Docs
+
+- [Claude Code](./hosts/claude-code.md)
+- [Hermes](./hosts/hermes.md)
+- [OpenCode](./hosts/opencode.md)
+
+## Runbooks
+
+- [Provider smoke runbook](./runbooks/plotloom-provider-smoke.md)
+
+## Archived Adapter Drafts
+
+These are kept for research history only. They are not implemented in the current CLI.
+
+- [Aliyun Bailian Wan](./archive/adapters/aliyun-bailian-wan.md)
+- [fal / HappyHorse](./archive/adapters/happyhorse-fal.md)
+
+## Early Documents Index
 
 These documents were migrated from the local knowledge wiki into the public Plotloom repo.
 

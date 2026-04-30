@@ -5,6 +5,8 @@
 > Owner：贵平  
 > Agent：Nova
 
+> 历史状态：这是 CLI 之前的 MVP 技术草案。当前项目已经收敛到 `plotloom` Python CLI；repo-level `scripts/` 兼容入口已移除。Adapter/host 文档统一放在 `docs/` 下。
+
 ## 1. 一句话技术定义
 
 Plotloom 的工程形态是：
@@ -171,14 +173,14 @@ plotloom/
 | `templates/series-repo/` | 新短剧 repo 的最小骨架和初始 artifact 模板 | 是 |
 | `scripts/` | 确定性辅助脚本：初始化、校验、selected copy、ffprobe、ffmpeg、adapter glue | 是，但必须保持薄 |
 | `scripts/adapters/` | 外部工具调用包装，如 fake video、Dreamina CLI | adapter |
-| `adapters/` | Codex / Hermes / Claude Code / OpenCode 的安装与运行说明 | 非 core |
+| `docs/adapters/` / `docs/hosts/` | Provider adapter 与 agent host 的安装/运行说明 | 非 core |
 | `examples/` | tiny demo series，用于端到端验收和回归 | 是 |
 | `docs/` | PRD、技术设计、implementation plan、决策记录 | 是 |
 
 设计约束：
 
 - core workflow 放 `skills/`，不是放 runtime-specific adapter。
-- `adapters/` 只解释不同 agent host 如何加载/使用 Plotloom，不复制整套业务逻辑。
+- `docs/hosts/` 只解释不同 agent host 如何加载/使用 Plotloom，不复制整套业务逻辑。
 - `scripts/` 只做确定性动作；创作判断、审美判断、rerun 建议仍写在 skill/prompt 中。
 - `templates/series-repo/` 是创建短剧 repo 的来源；实际生产状态以 series repo 内 Markdown/TOML/media 文件为准。
 - MVP 先实现 core skills + templates + fake adapter + ffmpeg；Codex/Hermes/Claude/OpenCode adapters 等 core 稳定后再补全。

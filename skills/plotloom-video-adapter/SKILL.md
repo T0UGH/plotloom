@@ -38,7 +38,7 @@ Use when `episodes/epXXX/video-prompts.md` or `video-prompts-en.md` exists and a
 - Fail fast on missing prompt, missing clip id, invalid output path, missing login, missing `maestro`, missing quota, or provider error.
 - Fake adapter proves file-path contracts and ffmpeg compatibility; it does not prove creative quality.
 - Dreamina requires host pre-authentication. The adapter must not automate OAuth, store credentials, or copy tokens.
-- Do not create a Python runtime client in the skill; keep this as a prompt and command contract plus thin deterministic scripts.
+- Do not create a Python runtime client in the skill; keep this as a prompt and command contract plus the `plotloom` CLI.
 - Do not batch-generate three candidates in MVP.
 
 ## Stop Conditions
