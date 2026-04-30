@@ -103,12 +103,20 @@ def init_repo(target: Path, *, slug: str, title: str, registry: Path | None = No
         validate_registry_append(registry, slug=slug, path=target)
 
     target_existed = target.exists()
+    staging = target.parent / f".{target.name}.plotloom-tmp"
+    if staging.exists():
+        shutil.rmtree(staging)
     try:
-        target.mkdir(parents=True, exist_ok=True)
-        copy_template(template_root(), target, slug=slug, title=title)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        copy_template(template_root(), staging, slug=slug, title=title)
         if registry:
             append_registry(registry, slug=slug, title=title, path=target)
+        if target_existed:
+            target.rmdir()
+        staging.rename(target)
     except Exception:
+        if staging.exists():
+            shutil.rmtree(staging)
         if not target_existed and target.exists():
             shutil.rmtree(target)
         raise

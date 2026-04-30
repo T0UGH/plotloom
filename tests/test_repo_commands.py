@@ -140,3 +140,24 @@ def test_init_registry_parent_failure_does_not_create_partial_repo(tmp_path):
     assert "registry parent" in payload["error"]["message"]
     assert "target repo is not empty" not in result.output
     assert not (repos_root / "demo").exists()
+
+
+def test_init_failure_keeps_existing_empty_target_empty(tmp_path, monkeypatch):
+    target = tmp_path / "repo"
+    target.mkdir()
+
+    def fail_append(*args, **kwargs):
+        raise repo_module.RegistryError("could not write registry")
+
+    monkeypatch.setattr(repo_module, "validate_registry_append", lambda *args, **kwargs: True)
+    monkeypatch.setattr(repo_module, "append_registry", fail_append)
+
+    try:
+        repo_module.init_repo(target, slug="demo", title="Demo", registry=tmp_path / "plotloom.toml")
+    except repo_module.RegistryError:
+        pass
+    else:
+        raise AssertionError("expected registry failure")
+
+    assert target.exists()
+    assert list(target.iterdir()) == []
