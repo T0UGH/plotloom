@@ -1,3 +1,5 @@
+import json
+
 from click.testing import CliRunner
 
 import plotloom.repo as repo_module
@@ -86,3 +88,34 @@ def test_registry_duplicate_slug_different_path_fails(tmp_path):
 
 def test_toml_str_escapes_control_characters():
     assert "\\u0007" in toml_str("bad\x07value")
+
+
+def test_init_registry_conflict_does_not_create_partial_repo(tmp_path):
+    config = tmp_path / ".plotloom" / ".env.toml"
+    repos_root = tmp_path / "repos"
+    registry = tmp_path / "plotloom.toml"
+    config.parent.mkdir()
+    config.write_text(
+        f'[plotloom]\nrepos_root = "{repos_root}"\nregistry_path = "{registry}"\n',
+        encoding="utf-8",
+    )
+    registry.write_text('[[repos]]\nslug = "demo"\ntitle = "Demo"\npath = "/different/path"\n', encoding="utf-8")
+
+    result = CliRunner().invoke(main, ["--json", "--config", str(config), "init", "demo", "--title", "Demo"])
+
+    assert result.exit_code == 1
+    assert '"command": "repo.init"' in result.output
+    assert not (repos_root / "demo").exists()
+
+
+def test_validate_json_error_command_is_stable(tmp_path):
+    repo = tmp_path / "series"
+    (repo / "episodes").mkdir(parents=True)
+    (repo / "series.md").write_text("# Series\n", encoding="utf-8")
+    (repo / "characters.md").write_text("# Characters\n", encoding="utf-8")
+
+    result = CliRunner().invoke(main, ["--json", "--repo", str(repo), "validate", "--episode", "../../outside"])
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["command"] == "repo.validate"

@@ -94,12 +94,25 @@ def init_repo(target: Path, *, slug: str, title: str, registry: Path | None = No
         raise ValueError("invalid title")
     if target.exists() and any(target.iterdir()):
         raise FileExistsError(str(target))
+    if registry:
+        validate_registry_append(registry, slug=slug, path=target)
 
     target.mkdir(parents=True, exist_ok=True)
     copy_template(template_root(), target, slug=slug, title=title)
     if registry:
         append_registry(registry, slug=slug, title=title, path=target)
     return target
+
+
+def validate_registry_append(registry: Path, *, slug: str, path: Path) -> None:
+    repos = read_registry(registry)
+    for repo in repos:
+        if repo.get("slug") != slug:
+            continue
+        existing_path = Path(str(repo.get("path", ""))).expanduser()
+        if existing_path == path:
+            return
+        raise ValueError(f"registry slug conflict: {slug}")
 
 
 def validate_segment(kind: str, value: str) -> str:

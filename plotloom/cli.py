@@ -27,7 +27,7 @@ def _normalize_json_args(args: list[str]) -> list[str]:
 
 
 def _attempted_command(args: list[str]) -> str:
-    options_with_values = {"--repo", "--config"}
+    options_with_values = {"--adapter", "--config", "--episode", "--path", "--repo", "--title"}
     flag_options = {"--json", "--quiet", "--dry-run", "-h", "--help"}
     parts: list[str] = []
     skip_next = False
@@ -45,7 +45,15 @@ def _attempted_command(args: list[str]) -> str:
         parts.append(arg)
         if len(parts) == 2:
             break
-    return ".".join(parts) if parts else "unknown"
+    if not parts:
+        return "unknown"
+    if parts[0] == "config":
+        if len(parts) > 1 and parts[1] in {"doctor", "init", "path"}:
+            return f"config.{parts[1]}"
+        return "config"
+    if parts[0] in {"init", "validate"}:
+        return f"repo.{parts[0]}"
+    return parts[0]
 
 
 def _exit_code(error: click.ClickException) -> int:
