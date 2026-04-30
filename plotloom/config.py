@@ -9,6 +9,8 @@ from typing import Any
 
 import tomli_w
 
+from plotloom.errors import ConfigError
+
 DEFAULT_CONFIG_PATH = Path("~/.plotloom/.env.toml")
 
 ENV_MAP = {
@@ -68,6 +70,20 @@ class PlotloomConfig:
     def adapter_value(self, adapter: str, key: str, default: Any = None) -> Any:
         return self.section_value(f"adapters.{adapter}", key, default)
 
+    def value_source(self, dotted_section: str, key: str) -> str:
+        env = ENV_MAP.get((dotted_section, key))
+        if env and os.environ.get(env):
+            return "env"
+
+        current: Any = self.data
+        for part in dotted_section.split("."):
+            if not isinstance(current, dict):
+                return "absent"
+            current = current.get(part, {})
+        if not isinstance(current, dict) or not current.get(key):
+            return "absent"
+        return "config"
+
     @property
     def repos_root(self) -> Path:
         return Path(self.section_value("plotloom", "repos_root", "~/plotloom_repo")).expanduser()
@@ -81,16 +97,27 @@ def default_config_path() -> Path:
     return Path(os.environ.get("PLOTLOOM_CONFIG", str(DEFAULT_CONFIG_PATH))).expanduser()
 
 
+def resolve_config_path(path: str | Path | None = None) -> Path:
+    return Path(path).expanduser() if path else default_config_path()
+
+
 def load_config(path: str | Path | None = None) -> PlotloomConfig:
-    cfg_path = Path(path).expanduser() if path else default_config_path()
+    cfg_path = resolve_config_path(path)
     data: dict[str, Any] = {}
     if cfg_path.exists():
-        data = tomllib.loads(cfg_path.read_text(encoding="utf-8"))
+        try:
+            data = tomllib.loads(cfg_path.read_text(encoding="utf-8"))
+        except tomllib.TOMLDecodeError as error:
+            raise ConfigError(
+                f"Could not parse config TOML at {cfg_path}: {error}",
+                next_step="Fix the TOML syntax or run plotloom config init --force to recreate it.",
+            ) from error
     return PlotloomConfig(path=cfg_path, data=data)
 
 
 def write_default_config(path: Path, *, force: bool = False) -> None:
     if path.exists() and not force:
+        path.chmod(0o600)
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(tomli_w.dumps(DEFAULT_TEMPLATE), encoding="utf-8")

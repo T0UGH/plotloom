@@ -7,6 +7,7 @@ import sys
 import click
 
 from plotloom import __version__
+from plotloom.errors import PlotloomError
 
 
 def _error_code(error: click.ClickException) -> str:
@@ -16,6 +17,13 @@ def _error_code(error: click.ClickException) -> str:
 
 def _wants_json(args: list[str]) -> bool:
     return "--json" in args
+
+
+def _normalize_json_args(args: list[str]) -> list[str]:
+    if "--json" not in args or "--help" in args or "-h" in args or "--version" in args:
+        return args
+    normalized = [arg for arg in args if arg != "--json"]
+    return ["--json", *normalized]
 
 
 def _attempted_command(args: list[str]) -> str:
@@ -54,15 +62,36 @@ class PlotloomGroup(click.Group):
         **extra: object,
     ) -> object:
         args_list = list(sys.argv[1:] if args is None else args)
+        normalized_args = _normalize_json_args(args_list)
         try:
             return super().main(
-                args=args,
+                args=normalized_args,
                 prog_name=prog_name,
                 complete_var=complete_var,
                 standalone_mode=False,
                 windows_expand_args=windows_expand_args,
                 **extra,
             )
+        except PlotloomError as error:
+            if _wants_json(args_list):
+                payload = {
+                    "ok": False,
+                    "command": _attempted_command(normalized_args),
+                    "error": {
+                        "code": error.code,
+                        "message": error.message,
+                    },
+                }
+                if error.next_step:
+                    payload["error"]["next_step"] = error.next_step
+                click.echo(json.dumps(payload, ensure_ascii=False))
+            else:
+                click.echo(f"Error: {error.message}", err=True)
+                if error.next_step:
+                    click.echo(f"Next step: {error.next_step}", err=True)
+            if standalone_mode:
+                sys.exit(error.exit_code)
+            raise
         except click.ClickException as error:
             if _wants_json(args_list):
                 click.echo(
