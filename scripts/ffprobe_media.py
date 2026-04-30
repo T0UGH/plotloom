@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
 """Probe media with ffprobe and print concise JSON."""
 from __future__ import annotations
-import argparse, json, subprocess, sys
+
+import argparse
+import json
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from plotloom.errors import MediaValidationError
+from plotloom.media import probe_media
 
 
 def main() -> int:
@@ -13,18 +21,12 @@ def main() -> int:
     if not video.exists():
         print(f'missing video: {video}', file=sys.stderr)
         return 2
-    cmd = ['ffprobe', '-v', 'error', '-print_format', 'json', '-show_streams', '-show_format', str(video)]
-    result = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if result.returncode != 0:
-        print(result.stderr, file=sys.stderr)
-        return result.returncode
-    data = json.loads(result.stdout or '{}')
-    print(json.dumps({
-        'path': str(video),
-        'streams': len(data.get('streams', [])),
-        'duration': data.get('format', {}).get('duration'),
-        'format_name': data.get('format', {}).get('format_name'),
-    }, ensure_ascii=False, indent=2))
+    try:
+        facts = probe_media(video)
+    except MediaValidationError as error:
+        print(error.message, file=sys.stderr)
+        return error.exit_code
+    print(json.dumps(facts.to_dict(), ensure_ascii=False, indent=2))
     return 0
 
 if __name__ == '__main__':

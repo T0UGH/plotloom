@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plotloom"
+version = "0.1.0"
+description = "Short-drama-native production CLI for Plotloom series repos"
+requires-python = ">=3.11"
+dependencies = [
+  "click>=8.1",
+  "requests>=2.31",
+  "tomli-w>=1.0",
+]
+
+[project.optional-dependencies]
+volcengine = ["volcengine-python-sdk[ark]>=5.0.0"]
+dev = ["pytest>=8", "ruff>=0.5"]
+
+[project.scripts]
+plotloom = "plotloom.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.setuptools.packages.find]
+include = ["plotloom*"]
+
+[tool.setuptools.package-data]
+plotloom = [
+  "templates/series-repo/assets/cast/.gitkeep",
+  "templates/series-repo/assets/scenes/.gitkeep",
+  "templates/series-repo/characters.md",
+  "templates/series-repo/episodes/ep001/images/covers/candidates/.gitkeep",
+  "templates/series-repo/episodes/ep001/videos/.gitkeep",
+  "templates/series-repo/outputs/.gitkeep",
+  "templates/series-repo/plotloom.toml",
+  "templates/series-repo/series.md",
+]
