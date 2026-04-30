@@ -16,6 +16,28 @@ def _safe_path_part(value: str) -> str:
     return value.replace("/", "-").replace(":", "-")
 
 
+def _safe_dir_part(value: str, field_name: str) -> str:
+    path = Path(value)
+    if (
+        not value
+        or path.is_absolute()
+        or value in {".", ".."}
+        or "/" in value
+        or "\\" in value
+        or ".." in path.parts
+    ):
+        raise ValueError(f"{field_name} must be a safe path part")
+    return value
+
+
+def _toml_safe(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: _toml_safe(item) for key, item in value.items() if item is not None}
+    if isinstance(value, (list, tuple)):
+        return [_toml_safe(item) for item in value if item is not None]
+    return value
+
+
 @dataclass
 class Receipt:
     adapter: str
@@ -46,12 +68,14 @@ class Receipt:
 
 
 def receipt_path(repo: str | Path, episode: str, clip: str, adapter: str, provider_task_id: str) -> Path:
+    episode = _safe_dir_part(episode, "episode")
+    clip = _safe_dir_part(clip, "clip")
     name = f"{_safe_path_part(adapter)}-{_safe_path_part(provider_task_id)}.toml"
     return Path(repo) / "episodes" / episode / "videos" / clip / "tasks" / name
 
 
 def _receipt_data(receipt: Receipt) -> dict[str, Any]:
-    return {key: value for key, value in asdict(receipt).items() if value is not None}
+    return {key: _toml_safe(value) for key, value in asdict(receipt).items() if value is not None}
 
 
 def write_receipt(path: str | Path, receipt: Receipt) -> None:
