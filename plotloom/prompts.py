@@ -1,0 +1,100 @@
+from __future__ import annotations
+
+import hashlib
+import re
+from dataclasses import asdict, dataclass
+
+CLIP_HEADING = re.compile(r"^##\s+(?P<clip>clip(?:\s+|-)\d+)\s*$", re.IGNORECASE | re.MULTILINE)
+PROMPT_MARKER = re.compile(r"^\s*(?:[-*]\s*)?Prompt(?:\s+string)?:\s*(?P<inline>.*)$", re.IGNORECASE | re.MULTILINE)
+STOP_MARKER = re.compile(
+    r"^\s*(?:[-*]\s*)?(?:Reference images|Duration hint|Ratio|Ending frame(?:\s*/\s*handoff point)?):",
+    re.IGNORECASE | re.MULTILINE,
+)
+IMAGE_REFERENCE_MODES = {"image-to-video", "reference-to-video"}
+
+
+@dataclass(frozen=True)
+class CompiledPrompt:
+    prompt_text: str
+    prompt_sha256: str
+    prompt_chars: int
+    warnings: list[str]
+
+    def to_dict(self) -> dict[str, object]:
+        return asdict(self)
+
+
+def _slug_clip(value: str) -> str:
+    normalized = re.sub(r"\s+", "-", value.strip().lower())
+    if re.fullmatch(r"clip-\d+", normalized):
+        prefix, number = normalized.split("-", 1)
+        return f"{prefix}-{int(number):02d}"
+    return normalized
+
+
+def _sections(text: str) -> dict[str, str]:
+    matches = list(CLIP_HEADING.finditer(text))
+    sections: dict[str, str] = {}
+    for index, match in enumerate(matches):
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        sections[_slug_clip(match.group("clip"))] = text[start:end].strip()
+    return sections
+
+
+def list_clips(text: str) -> list[str]:
+    return list(_sections(text).keys())
+
+
+def extract_clip_prompt(text: str, clip: str) -> str:
+    normalized_clip = _slug_clip(clip)
+    sections = _sections(text)
+    section = sections.get(normalized_clip)
+    if section is None:
+        raise KeyError(f"clip not found: {normalized_clip}")
+
+    marker = PROMPT_MARKER.search(section)
+    if marker is None:
+        return ""
+
+    inline = marker.group("inline").strip()
+    body_start = marker.end()
+    body = section[body_start:].strip()
+    if inline:
+        body = f"{inline}\n{body}".strip() if body else inline
+
+    stop = STOP_MARKER.search(body)
+    if stop:
+        body = body[: stop.start()]
+    return body.strip()
+
+
+def compile_prompt(text: str, clip: str, adapter: str, mode: str) -> CompiledPrompt:
+    prompt = extract_clip_prompt(text, clip)
+    warnings: list[str] = []
+    normalized_adapter = adapter.strip().lower()
+    normalized_mode = mode.strip().lower()
+
+    if normalized_adapter == "aliyun-bailian-wan" and normalized_mode in IMAGE_REFERENCE_MODES:
+        prompt = _prepend_instruction(prompt, "Use provided images only as visual references.")
+    elif normalized_adapter == "volcengine-seedance" and normalized_mode in IMAGE_REFERENCE_MODES:
+        prompt = _prepend_instruction(prompt, "Use attached images by their request roles: first_frame and reference_image.")
+    elif not normalized_adapter:
+        warnings.append("adapter is empty; compiled provider-neutral prompt")
+    elif not normalized_mode:
+        warnings.append("mode is empty; compiled provider-neutral prompt")
+
+    if not prompt.strip():
+        raise ValueError(f"compiled prompt is empty for {_slug_clip(clip)}")
+
+    return CompiledPrompt(
+        prompt_text=prompt,
+        prompt_sha256=hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
+        prompt_chars=len(prompt),
+        warnings=warnings,
+    )
+
+
+def _prepend_instruction(prompt: str, instruction: str) -> str:
+    prompt = prompt.strip()
+    return f"{instruction}\n{prompt}" if prompt else prompt

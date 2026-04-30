@@ -74,6 +74,10 @@ def _attempted_command(args: list[str]) -> str:
         if len(parts) > 1 and parts[1] in {"check", "normalize", "probe"}:
             return f"media.{parts[1]}"
         return "media"
+    if parts[0] == "prompt":
+        if len(parts) > 1 and parts[1] in {"check", "compile", "extract", "list"}:
+            return f"prompt.{parts[1]}"
+        return "prompt"
     if parts[0] in {"init", "validate"}:
         return f"repo.{parts[0]}"
     return parts[0]
@@ -171,6 +175,7 @@ def main(ctx: click.Context, repo: str | None, config_path: str | None, as_json:
 
 from plotloom.commands.config import config_group  # noqa: E402
 from plotloom.commands.media import media_group  # noqa: E402
+from plotloom.commands.prompt import prompt_group  # noqa: E402
 from plotloom.commands.repo import init_command, validate_command  # noqa: E402
 from plotloom.commands.repos import repos_group  # noqa: E402
 from plotloom.commands.select import select_command  # noqa: E402
@@ -178,6 +183,7 @@ from plotloom.commands.select import select_command  # noqa: E402
 main.add_command(config_group)
 main.add_command(init_command)
 main.add_command(media_group)
+main.add_command(prompt_group)
 main.add_command(repos_group)
 main.add_command(select_command)
 main.add_command(validate_command)
