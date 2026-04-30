@@ -18,6 +18,31 @@ def _wants_json(args: list[str]) -> bool:
     return "--json" in args
 
 
+def _attempted_command(args: list[str]) -> str:
+    options_with_values = {"--repo", "--config"}
+    flag_options = {"--json", "--quiet", "--dry-run", "-h", "--help"}
+    skip_next = False
+    for arg in args:
+        if skip_next:
+            skip_next = False
+            continue
+        if arg in options_with_values:
+            skip_next = True
+            continue
+        if arg in flag_options:
+            continue
+        if arg.startswith("-"):
+            continue
+        return arg
+    return "unknown"
+
+
+def _exit_code(error: click.ClickException) -> int:
+    if isinstance(error, click.UsageError):
+        return 1
+    return error.exit_code
+
+
 class PlotloomGroup(click.Group):
     def main(
         self,
@@ -44,6 +69,7 @@ class PlotloomGroup(click.Group):
                     json.dumps(
                         {
                             "ok": False,
+                            "command": _attempted_command(args_list),
                             "error": {
                                 "code": _error_code(error),
                                 "message": error.format_message(),
@@ -55,7 +81,7 @@ class PlotloomGroup(click.Group):
             else:
                 error.show()
             if standalone_mode:
-                sys.exit(error.exit_code)
+                sys.exit(_exit_code(error))
             raise
         except click.exceptions.Exit as error:
             if standalone_mode:
