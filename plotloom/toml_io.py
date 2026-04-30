@@ -1,6 +1,7 @@
 from __future__ import annotations
 
+import json
+
 
 def toml_str(value: object) -> str:
-    s = str(value)
-    return '"' + s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "\\r") + '"'
+    return json.dumps(str(value), ensure_ascii=False)

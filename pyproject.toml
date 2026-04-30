@@ -26,3 +26,15 @@ testpaths = ["tests"]
 
 [tool.setuptools.packages.find]
 include = ["plotloom*"]
+
+[tool.setuptools.package-data]
+plotloom = [
+  "templates/series-repo/assets/cast/.gitkeep",
+  "templates/series-repo/assets/scenes/.gitkeep",
+  "templates/series-repo/characters.md",
+  "templates/series-repo/episodes/ep001/images/covers/candidates/.gitkeep",
+  "templates/series-repo/episodes/ep001/videos/.gitkeep",
+  "templates/series-repo/outputs/.gitkeep",
+  "templates/series-repo/plotloom.toml",
+  "templates/series-repo/series.md",
+]

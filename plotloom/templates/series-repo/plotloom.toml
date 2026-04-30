@@ -1,0 +1,4 @@
+slug = "{{slug}}"
+title = "{{title}}"
+status = "active"
+created_by = "plotloom"

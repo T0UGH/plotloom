@@ -6,7 +6,7 @@ import click
 
 from plotloom.config import load_config
 from plotloom.output import emit
-from plotloom.repo import init_repo, validate_repo
+from plotloom.repo import find_repo_from_cwd, init_repo, validate_repo
 
 
 @click.command("init")
@@ -38,11 +38,17 @@ def init_command(ctx: click.Context, slug: str, title: str, path_value: str | No
 @click.pass_context
 def validate_command(ctx: click.Context, episode: str | None, require_prompts: bool, require_media: bool) -> None:
     repo_arg = ctx.obj.get("repo")
-    if not repo_arg:
-        raise click.ClickException("--repo is required until discovery is implemented")
+    discovered = find_repo_from_cwd(Path.cwd()) if not repo_arg else None
+    if not repo_arg and discovered is None:
+        raise click.ClickException("--repo is required outside a Plotloom series repo")
 
-    repo = Path(repo_arg).expanduser().resolve()
-    result = validate_repo(repo, episode=episode, require_prompts=require_prompts, require_media=require_media)
+    repo = Path(repo_arg).expanduser().resolve() if repo_arg else discovered
+    if repo is None:
+        raise click.ClickException("--repo is required outside a Plotloom series repo")
+    try:
+        result = validate_repo(repo, episode=episode, require_prompts=require_prompts, require_media=require_media)
+    except ValueError as error:
+        raise click.ClickException(str(error)) from error
     if not result.ok:
         raise click.ClickException("missing required Plotloom paths:\n" + "\n".join(str(path) for path in result.missing))
 

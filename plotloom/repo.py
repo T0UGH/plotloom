@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import re
 import shutil
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from plotloom.toml_io import toml_str
 
 SAFE_SLUG = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+SAFE_SEGMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 TEXT_EXTS = {".md", ".toml", ".txt"}
 
 
@@ -19,6 +22,16 @@ class RepoValidation:
 
 def project_root() -> Path:
     return Path(__file__).resolve().parents[1]
+
+
+def template_root() -> Path:
+    source_template = project_root() / "templates" / "series-repo"
+    if source_template.exists():
+        return source_template
+    package_template = Path(__file__).resolve().parent / "templates" / "series-repo"
+    if package_template.exists():
+        return package_template
+    raise FileNotFoundError("series repo template not found")
 
 
 def copy_template(src: Path, dst: Path, *, slug: str, title: str) -> None:
@@ -39,6 +52,15 @@ def copy_template(src: Path, dst: Path, *, slug: str, title: str) -> None:
 
 def append_registry(registry: Path, *, slug: str, title: str, path: Path) -> None:
     registry.parent.mkdir(parents=True, exist_ok=True)
+    repos = read_registry(registry)
+    for repo in repos:
+        if repo.get("slug") != slug:
+            continue
+        existing_path = Path(str(repo.get("path", ""))).expanduser()
+        if existing_path == path:
+            return
+        raise ValueError(f"registry slug conflict: {slug}")
+
     entry = "\n".join(
         [
             "[[repos]]",
@@ -50,11 +72,19 @@ def append_registry(registry: Path, *, slug: str, title: str, path: Path) -> Non
         ]
     )
     text = registry.read_text(encoding="utf-8") if registry.exists() else "# Plotloom home repo registry\n\n"
-    if f"slug = {toml_str(slug)}" in text:
-        return
     if text and not text.endswith("\n"):
         text += "\n"
     registry.write_text(text + entry, encoding="utf-8")
+
+
+def read_registry(registry: Path) -> list[dict[str, Any]]:
+    if not registry.exists():
+        return []
+    data = tomllib.loads(registry.read_text(encoding="utf-8"))
+    repos = data.get("repos", [])
+    if not isinstance(repos, list):
+        raise ValueError("registry repos must be an array")
+    return [repo for repo in repos if isinstance(repo, dict)]
 
 
 def init_repo(target: Path, *, slug: str, title: str, registry: Path | None = None) -> Path:
@@ -65,12 +95,17 @@ def init_repo(target: Path, *, slug: str, title: str, registry: Path | None = No
     if target.exists() and any(target.iterdir()):
         raise FileExistsError(str(target))
 
-    template = project_root() / "templates" / "series-repo"
     target.mkdir(parents=True, exist_ok=True)
-    copy_template(template, target, slug=slug, title=title)
+    copy_template(template_root(), target, slug=slug, title=title)
     if registry:
         append_registry(registry, slug=slug, title=title, path=target)
     return target
+
+
+def validate_segment(kind: str, value: str) -> str:
+    if not SAFE_SEGMENT.match(value):
+        raise ValueError(f"invalid {kind}: {value}")
+    return value
 
 
 def validate_repo(
@@ -87,6 +122,7 @@ def validate_repo(
             missing.append(path)
 
     if episode:
+        episode = validate_segment("episode", episode)
         ep_dir = repo / "episodes" / episode
         if not ep_dir.exists():
             missing.append(ep_dir)
