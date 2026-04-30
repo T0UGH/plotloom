@@ -269,6 +269,104 @@ fal prompt max is 2500 characters. `plotloom prompt extract/check` must ensure:
 - for reference mode, image order and `character1..character9` names are explicit;
 - duration target is within 3-15s.
 
+## Pricing / purchase / API key
+
+### fal.ai recommended path
+
+fal's HappyHorse landing page currently states:
+
+```text
+720p:  $0.14 / generated second
+1080p: $0.28 / generated second
+```
+
+Billing model:
+
+- pay per generated output second, no subscription required for this model path;
+- prepaid credits: buy credits in advance, usage draws down credits;
+- only successful outputs are billed;
+- server errors and queue waiting time are not billed;
+- enterprise customers can negotiate custom pricing / volume discounts.
+
+Cost examples:
+
+| Output | 720p | 1080p |
+|---:|---:|---:|
+| 3s probe | $0.42 | $0.84 |
+| 5s clip | $0.70 | $1.40 |
+| 10s clip | $1.40 | $2.80 |
+| 15s clip | $2.10 | $4.20 |
+
+Budget conversion:
+
+| Budget | 720p output | 1080p output |
+|---:|---:|---:|
+| $10 | ~71.4s / ~4.8 clips of 15s | ~35.7s / ~2.4 clips of 15s |
+| $20 | ~142.9s / ~9.5 clips | ~71.4s / ~4.8 clips |
+| $50 | ~357.1s / ~23.8 clips | ~178.6s / ~11.9 clips |
+| $100 | ~714.3s / ~47.6 clips | ~357.1s / ~23.8 clips |
+
+Plotloom first-episode rough cost if every clip is 15s:
+
+| Clips x candidates | 720p | 1080p |
+|---:|---:|---:|
+| 4 clips x 1 candidate | $8.40 | $16.80 |
+| 4 clips x 2 candidates | $16.80 | $33.60 |
+| 4 clips x 3 candidates | $25.20 | $50.40 |
+| 6 clips x 1 candidate | $12.60 | $25.20 |
+| 6 clips x 2 candidates | $25.20 | $50.40 |
+| 6 clips x 3 candidates | $37.80 | $75.60 |
+
+Purchase/setup flow:
+
+1. Sign in at `https://fal.ai`.
+2. Add credits / payment method from `https://fal.ai/dashboard/billing`.
+3. Create API key at `https://fal.ai/dashboard/keys`.
+4. Choose **API** scope when creating the key.
+5. Store as env var, preferably outside repo:
+
+```bash
+export FAL_KEY="..."
+```
+
+For Plotloom adapter docs, say “requires a pre-funded fal account + `FAL_KEY`”. Do not embed or commit the key.
+
+Programmatic pricing check supported by fal docs:
+
+```bash
+curl "https://api.fal.ai/v1/models/pricing?endpoint_id=alibaba/happy-horse/text-to-video" \
+  -H "Authorization: Key $FAL_KEY"
+```
+
+Use this in adapter `doctor` later to verify live price because model pricing may change.
+
+### MuAPI path: currently not preferred
+
+The MuAPI wrapper README reports:
+
+- Free plan cannot use HappyHorse; Pro or Business is required.
+- Pro: $20/month.
+- Business: $100/month.
+- Then generation is still billed per second.
+- Reported MuAPI rates are much higher than fal:
+  - T2V/I2V: 720p $0.28125/s, 1080p $0.5625/s.
+  - Ref2V/Edit: 720p $0.328125/s, 1080p $0.65625/s.
+
+So MuAPI is not the recommended first purchase path for Plotloom unless fal access fails or MuAPI has some account/region advantage.
+
+### Recommendation for buying
+
+For a small Plotloom probe:
+
+```text
+Buy/start with fal credits, not MuAPI subscription.
+Use 720p + 3s for the first smoke test: about $0.42.
+Then test one 15s 720p ref2v clip: about $2.10.
+Only move to 1080p after prompt/reference flow is stable.
+```
+
+Recommended initial budget: **$20-50 fal credits** is enough for several 720p tests and a small first-episode prototype. Use 1080p only for accepted/final-ish candidates.
+
 ## Fit / Trade-off
 
 Pros:
@@ -322,5 +420,8 @@ Acceptance:
 - https://fal.ai/models/alibaba/happy-horse/video-edit/api
 - https://artificialanalysis.ai/video/model-families/happyhorse
 - https://www.cnbc.com/2026/04/10/alibaba-happyhorse-ai-video-model-benchmark-reveal.html
+- https://fal.ai/pricing
+- https://fal.ai/docs/documentation/model-apis/pricing
+- https://fal.ai/docs/documentation/setting-up/authentication
 - https://github.com/Anil-matcha/Awesome-Happy-Horse-1.0-API-and-Prompt
 - https://github.com/Anil-matcha/happyhorse-comfyui
