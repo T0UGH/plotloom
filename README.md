@@ -1,146 +1,341 @@
 # Plotloom
 
-Agent-neutral short-drama production skills — a repo-first skill pack for turning a short-drama idea into series context, video prompts, candidates, selected clips, and `final.mp4`.
+**AI 短剧生产 CLI | Agent-neutral Skills | Repo-first 工作流**
 
-> Working name history: early notes used `dramaclaw`; the product/repo name is now **Plotloom**.
+Plotloom 是一套面向短剧生产的 CLI + Skills 工具箱。它不把创作过程藏进数据库、仪表盘或队列里，而是把每一步都落成可读、可提交、可复盘的系列仓库文件：`series.md`、`characters.md`、`video-prompts.md`、候选素材、`selected.mp4` 和最终交付物。
 
-## What Plotloom Is
+## 核心组合
 
-Plotloom is a **skill-first short-drama production pack**, not a runtime, dashboard, queue, or project-management system.
+| 环节 | 默认能力 |
+|------|----------|
+| 系列设定 | Plotloom skills 生成剧集设定、角色设定和 episode card |
+| 图片素材 | 本机 Codex image generation 能力，适合角色图、场景图、封面图 |
+| 视频生成 | Dreamina/即梦 CLI、VolcEngine Seedance 2.0、mock adapter |
+| 选择与交付 | 候选版本管理、`selected.*` 固化、ffmpeg/ffprobe 拼接检查 |
 
-Core flow:
+> Plotloom 的重点不是“一键黑盒生成”，而是让 Agent 和人类可以围绕同一个 repo 协作，把短剧生产过程拆成清晰、可审查、可重跑的文件边界。
+
+## 概述
+
+Plotloom 面向短剧、广告短片、角色连续剧和系列化视频实验。它负责三件事：
+
+- 让 Agent 先沉淀稳定的系列上下文，而不是直接写一次性 prompt。
+- 把图片、视频、选择、拼接这些步骤固定到一致的目录结构。
+- 为真实模型接入提供 thin adapter，让本地 mock E2E 和付费 provider smoke 分开。
+
+典型流程：
 
 ```text
-series idea
+短剧想法
   -> series.md / characters.md
-  -> optional episode-card.md
+  -> episode-card.md
   -> video-prompts.md / video-prompts-en.md
-  -> fake or real video candidate
+  -> image candidates / video candidates
   -> accept / reroll / revise_prompt
-  -> selected.mp4 clips
+  -> selected.mp4
   -> final.mp4
 ```
 
-## Install Skills
+## 推荐客户端
 
-Default install path is **skills.sh** via the `skills` CLI.
+| 客户端 | 状态 |
+|--------|------|
+| Codex | 已适配 CLI + skills 协作方式 |
+| Claude Code | 可通过 skills 安装使用 |
+| 其他支持 skills.sh 的客户端 | 按各自的 skills 安装方式接入 |
 
-### Install from GitHub
+Plotloom 的核心约束是 agent-neutral：CLI 不绑定某一个 Agent，skills 也尽量用文件契约而不是隐藏状态传递上下文。
+
+## 安装 CLI
+
+### 方式一：uvx（推荐，无需安装）
+
+```bash
+uvx plotloom --help
+```
+
+### 方式二：pip（全局安装）
+
+```bash
+pip install plotloom
+plotloom --help
+```
+
+### 方式三：本地开发模式
+
+```bash
+git clone https://github.com/T0UGH/plotloom.git
+cd plotloom
+pip install -e .
+plotloom --help
+```
+
+如需运行开发测试：
+
+```bash
+uv sync --extra dev
+uv run pytest
+```
+
+## 安装 Skills
+
+Plotloom skills 推荐通过 `skills` CLI 安装：
 
 ```bash
 npx skills add T0UGH/plotloom --all
 ```
 
-Useful variants:
+常用变体：
 
 ```bash
-# Project-level install, choose agents interactively
+# 项目级安装，交互选择 Agent
 npx skills add T0UGH/plotloom
 
-# Install globally/user-level
+# 全局安装到支持的 Agent
 npx skills add T0UGH/plotloom --global --all
 
-# Install only one skill
+# 只安装一个 skill
 npx skills add T0UGH/plotloom --skill plotloom-shot-prompts --all
 
-# List skills in the repo without installing
+# 只查看可安装的 skills
 npx skills add T0UGH/plotloom --list
 ```
 
-If the repository is private, make sure the local GitHub/Codex/agent environment can access `T0UGH/plotloom` before installing.
-
-### Local development install
-
-From this repository root:
+本地开发时可以从仓库根目录安装：
 
 ```bash
 npx skills add . --list
 npx skills add . --all
 ```
 
-`skills.sh` / `npx skills` can install to multiple agent targets such as Cursor, Claude Code, and other supported skill hosts. Use `--agent <agent>` to restrict targets when needed.
-
-## Skills
-
-```text
-skills/
-  plotloom-series-bible/      # series.md, characters.md, character asset briefs
-  plotloom-episode-card/      # lean episode intent card
-  plotloom-shot-prompts/      # continuous Seedance/Dreamina-style video prompts
-  plotloom-video-adapter/     # fake/Dreamina candidate generation contract
-  plotloom-asset-selection/   # accept/reroll/revise_prompt and selected.* semantics
-  plotloom-stitch-deliver/    # ffprobe/ffmpeg stitch and delivery boundary
-```
-
-Each skill includes `SKILL.md`; most also include `references/`, `templates/`, and `evals/evals.json` for validation and future skill-creator workflows.
-
-## Repository Layout
-
-```text
-docs/
-  prd/
-  design/
-  plans/
-  decisions/
-  research/
-skills/
-templates/series-repo/
-scripts/
-  init_series.py
-  validate_repo.py
-  select_candidate.py
-  ffprobe_media.py
-  stitch_ffmpeg.py
-  adapters/fake_video.py
-adapters/
-  codex.md
-  dreamina.md
-  hermes.md
-  claude-code.md
-  opencode.md
-examples/tiny-series/
-```
-
-## Minimal Local Verification
+## 快速开始
 
 ```bash
-python scripts/validate_repo.py --repo examples/tiny-series
-python scripts/adapters/fake_video.py --output /tmp/plotloom-plan-check/v001.mp4
-ffprobe -v error /tmp/plotloom-plan-check/v001.mp4
+# 1. 初始化本机配置
+plotloom config init
+
+# 2. 创建一个短剧系列 repo
+plotloom init neon-heiress --title "霓虹假千金"
+
+# 3. 进入默认创建位置
+cd ~/plotloom_repo/neon-heiress
+
+# 4. 补一段可测试的 prompt
+cat > episodes/ep001/video-prompts-en.md <<'EOF'
+## Clip 01
+
+Prompt string:
+A 5-second vertical short-drama opening. A young heiress walks into a neon-lit hotel lobby, calm but dangerous.
+EOF
+
+# 5. 本地 mock 生成候选视频，不调用真实 provider
+plotloom --repo . video submit --episode ep001 --clip clip-01 --adapter mock
+
+# 6. 选择候选版本
+plotloom --repo . select episodes/ep001/videos/clip-01/candidates/v001.mock.mp4
+
+# 7. 检查 repo 状态
+plotloom --repo . validate --require-prompts --require-media
 ```
 
-Full fake E2E:
+生成后的关键文件：
+
+```text
+episodes/ep001/video-prompts-en.md
+episodes/ep001/videos/clip-01/candidates/v001.mock.mp4
+episodes/ep001/videos/clip-01/selected.mp4
+episodes/ep001/videos/clip-01/tasks/mock-local.toml
+```
+
+## 通过 Skills 创作
+
+Plotloom 的推荐用法是让 Agent 按阶段调用 skills，而不是一次性完成所有步骤：
+
+```text
+1. plotloom-series-bible      -> 稳定系列设定、角色关系和视觉锚点
+2. plotloom-episode-card      -> 定义单集 hook、反转、cliffhanger
+3. plotloom-shot-prompts      -> 生成连续视频 prompt
+4. plotloom-video-adapter     -> 提交 mock / Dreamina / Seedance 候选视频
+5. plotloom-asset-selection   -> accept、reroll 或 revise_prompt
+6. plotloom-stitch-deliver    -> 拼接 selected clips 并准备交付
+```
+
+### Skills 清单
+
+| Skill | 说明 |
+|-------|------|
+| `plotloom-series-bible` | 创建或更新 `series.md`、`characters.md` 和角色素材 brief |
+| `plotloom-episode-card` | 为单集生成轻量 episode intent card |
+| `plotloom-shot-prompts` | 生成适合 Seedance/Dreamina 的连续视频 prompt |
+| `plotloom-video-adapter` | 提交或轮询 mock、Dreamina、VolcEngine 视频任务 |
+| `plotloom-asset-selection` | 审查候选素材并固化为 `selected.*` |
+| `plotloom-stitch-deliver` | 用本地媒体工具拼接 `final.mp4` 并整理交付文件 |
+
+## 支持的 Provider
+
+| Adapter | 类型 | 用途 | 备注 |
+|---------|------|------|------|
+| `mock` | 本地视频 | 本地 E2E、测试和演示 | 不调用真实 provider |
+| `codex-app-server` | 图片 | 角色、场景、封面、reference 图 | 依赖本机 Codex 和 image generation 能力 |
+| `dreamina-cli` | 视频 | Dreamina/即梦视频生成 | 依赖本机 Dreamina CLI 登录态 |
+| `volcengine-seedance` | 视频 | VolcEngine Ark Seedance 2.0 | 通过 Ark async task API 提交和轮询 |
+
+真实 provider 建议先跑 doctor，再做单条短 clip smoke：
 
 ```bash
-python scripts/init_series.py --slug fake-heiress-reboot --title "Fake Heiress Reboot" --path /tmp/plotloom-demo/fake-heiress-reboot
-cp examples/tiny-series/episodes/ep001/video-prompts.md /tmp/plotloom-demo/fake-heiress-reboot/episodes/ep001/video-prompts.md
-python scripts/adapters/fake_video.py --output /tmp/plotloom-demo/fake-heiress-reboot/episodes/ep001/videos/clip-01/candidates/v001.mp4
-python scripts/select_candidate.py --candidate /tmp/plotloom-demo/fake-heiress-reboot/episodes/ep001/videos/clip-01/candidates/v001.mp4 --selected /tmp/plotloom-demo/fake-heiress-reboot/episodes/ep001/videos/clip-01/selected.mp4
-python scripts/stitch_ffmpeg.py --output /tmp/plotloom-demo/fake-heiress-reboot/episodes/ep001/videos/final.mp4 /tmp/plotloom-demo/fake-heiress-reboot/episodes/ep001/videos/clip-01/selected.mp4
-ffprobe -v error /tmp/plotloom-demo/fake-heiress-reboot/episodes/ep001/videos/final.mp4
+plotloom doctor --adapter dreamina-cli --deep
+plotloom doctor --adapter volcengine-seedance --deep
+plotloom config doctor --adapter volcengine-seedance
 ```
 
-## Real Adapters
+更多 smoke 步骤见 [Plotloom Provider Smoke Runbook](docs/runbooks/plotloom-provider-smoke.md)。
 
-- Image generation: local Codex install plus Codex app server, documented in `adapters/codex.md`.
-- Video generation: Dreamina/即梦 CLI and VolcEngine Seedance through Ark async APIs.
-- Manual provider smoke tests are documented in `docs/runbooks/plotloom-provider-smoke.md`.
-- Stitching: local `ffmpeg` / `ffprobe` helpers.
-- Delivery: Feishu/Lark is delivery only, not state center.
+## CLI 命令
 
-## Design Boundaries
+| 命令 | 说明 |
+|------|------|
+| `plotloom init` | 初始化一个系列 repo |
+| `plotloom validate` | 检查系列 repo 的必要文件和媒体状态 |
+| `plotloom config` | 管理 `~/.plotloom/.env.toml` 配置 |
+| `plotloom repos` | 管理本机系列 repo registry |
+| `plotloom prompt` | 检查、提取、编译 episode prompt |
+| `plotloom image` | 生成并归档图片候选 |
+| `plotloom video` | 提交和轮询视频生成任务 |
+| `plotloom asset` | 导入和查看本地素材 |
+| `plotloom select` | 把候选素材复制为 `selected.*` |
+| `plotloom media` | 调用本地媒体工具 probe、check、normalize |
+| `plotloom stitch` | 规划或拼接 selected clips |
+| `plotloom delivery` | 汇总交付文件 |
+| `plotloom doctor` | 检查本机 adapter、依赖和配置状态 |
 
-Do not add these to MVP:
+查看完整参数：
 
-- dashboard
-- database
-- workflow runtime
-- queue worker
-- hidden workflow state
-- mandatory `script.md`, `storyboard.md`, `director-brief.md`, or `review.md`
-- batch-heavy video generation
+```bash
+plotloom --help
+plotloom video submit --help
+plotloom image generate --help
+```
 
-Plotloom should stay prompt-first, repo-first, and adapter-thin.
+## 配置
+
+Plotloom 默认配置文件是：
+
+```text
+~/.plotloom/.env.toml
+```
+
+初始化：
+
+```bash
+plotloom config init
+plotloom config path
+```
+
+默认模板会包含：
+
+```toml
+[plotloom]
+repos_root = "~/plotloom_repo"
+registry_path = "~/plotloom.toml"
+default_image_adapter = "codex-app-server"
+default_video_adapters = ["dreamina-cli", "volcengine-seedance"]
+
+[adapters.codex-app-server]
+enabled = true
+codex_binary = "codex"
+app_server_url = ""
+
+[adapters.dreamina-cli]
+enabled = true
+binary = "dreamina"
+home = "~"
+
+[adapters.volcengine-seedance]
+enabled = true
+ark_api_key = ""
+base_url = "https://ark.cn-beijing.volces.com/api/v3"
+model = "doubao-seedance-2-0-260128"
+default_resolution = "720p"
+```
+
+### 环境变量覆盖
+
+| 环境变量 | 配置项 |
+|----------|--------|
+| `PLOTLOOM_CONFIG` | 指定配置文件路径 |
+| `PLOTLOOM_REPOS_ROOT` | 覆盖默认系列 repo 根目录 |
+| `PLOTLOOM_REGISTRY_PATH` | 覆盖 registry 路径 |
+| `CODEX_BINARY` | 覆盖 Codex binary |
+| `CODEX_APP_SERVER_URL` | 覆盖 Codex app server URL |
+| `DREAMINA_BINARY` | 覆盖 Dreamina CLI binary |
+| `DREAMINA_HOME` | 覆盖 Dreamina home |
+| `ARK_API_KEY` | VolcEngine Ark API Key |
+| `PLOTLOOM_VOLCENGINE_BASE_URL` | 覆盖 VolcEngine base URL |
+| `PLOTLOOM_VOLCENGINE_MODEL` | 覆盖 Seedance model |
+
+配置优先级：
+
+```text
+环境变量 > ~/.plotloom/.env.toml > 内置默认值
+```
+
+Plotloom 的 doctor 只报告密钥是否存在，不会输出密钥内容。
+
+## 系列 Repo 结构
+
+```text
+series.md
+characters.md
+plotloom.toml
+assets/
+  cast/
+  scenes/
+episodes/
+  ep001/
+    episode-card.md
+    video-prompts.md
+    video-prompts-en.md
+    images/
+    videos/
+      clip-01/
+        candidates/
+        tasks/
+        selected.mp4
+outputs/
+```
+
+这个结构是 Plotloom 的主要状态边界：Agent 可以读写它，人类可以 review 它，Git 可以记录它。
+
+## 设计边界
+
+Plotloom 当前不做这些事：
+
+- 不内置数据库
+- 不维护隐藏 workflow state
+- 不提供 dashboard
+- 不运行后台队列 worker
+- 不默认批量消耗真实 provider 额度
+- 不把 Feishu/Lark 当作状态中心
+- 不强制生成完整剧本、分镜表或导演阐述
+
+MVP 的原则是 prompt-first、repo-first、adapter-thin。
+
+## 开发
+
+```bash
+# 安装开发依赖
+uv sync --extra dev
+
+# 运行测试
+uv run pytest
+
+# 构建并检查包
+rm -rf dist build plotloom.egg-info
+uv run --isolated --with build --with twine python -m build
+uv run --isolated --with twine twine check dist/*
+```
+
+发布新版本前需要先 bump `pyproject.toml` 里的版本号；PyPI 不允许覆盖已经发布的同名版本。
 
 ## Tagline
 
