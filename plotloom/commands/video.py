@@ -8,7 +8,9 @@ import click
 from plotloom.output import emit
 from plotloom.paths import next_candidate_path
 from plotloom.prompts import compile_prompt
+from plotloom.config import load_config
 from plotloom.repo import find_repo_from_cwd
+from plotloom.video.adapters.dreamina_cli import DreaminaCliAdapter
 from plotloom.video.adapters.mock import MockVideoAdapter
 from plotloom.video.receipts import Receipt, receipt_path, write_latest_pointer, write_receipt
 from plotloom.video.types import PlotloomVideoRequest, VideoMode
@@ -45,7 +47,7 @@ def submit_command(
     prompt_file = repo / "episodes" / episode / VIDEO_PROMPTS
     prompt_text = prompt_file.read_text(encoding="utf-8")
     compiled = compile_prompt(prompt_text, clip, adapter=adapter, mode=mode)
-    video_adapter = _adapter(adapter)
+    video_adapter = _adapter(ctx, adapter)
     request = PlotloomVideoRequest(
         repo=repo,
         episode=episode,
@@ -119,7 +121,7 @@ def poll_command(ctx: click.Context, episode: str, clip: str, adapter: str | Non
     if not current_adapter or not provider_task_id:
         raise click.ClickException("--adapter and --task-id are required when latest-task.toml is missing")
 
-    status = _adapter(current_adapter).poll(provider_task_id, download_dir=clip_dir)
+    status = _adapter(ctx, current_adapter).poll(provider_task_id, download_dir=clip_dir)
     emit(
         {
             "ok": status.status not in {"failed", "error"},
@@ -141,9 +143,15 @@ def _repo_path(ctx: click.Context) -> Path:
     return repo
 
 
-def _adapter(name: str):
+def _adapter(ctx: click.Context, name: str):
     if name == "mock":
         return MockVideoAdapter()
+    if name == "dreamina-cli":
+        cfg = load_config(ctx.obj.get("config_path"))
+        return DreaminaCliAdapter(
+            binary=cfg.adapter_value("dreamina-cli", "binary", "dreamina"),
+            home=cfg.adapter_value("dreamina-cli", "home", "~"),
+        )
     raise click.ClickException(f"unsupported video adapter for submit shell: {name}")
 
 
