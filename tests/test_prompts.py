@@ -71,7 +71,26 @@ def test_extract_supports_cli_prompt_marker_with_code_span():
     prompt = extract_clip_prompt(text, "clip-01")
 
     assert "Keep this prompt from the skill template." in prompt
+    assert "```" not in prompt
+    assert "Continuity rules" not in prompt
     assert "Ending frame" not in prompt
+
+
+def test_extract_template_prompt_stops_before_following_template_fields():
+    text = """
+## clip-01
+- Prompt string for `--prompt`:
+  ```text
+  Keep only the provider prompt.
+  ```
+- Continuity rules:
+- Camera motion:
+- Dialogue / audio window:
+- Ending frame / handoff point:
+- Adapter-specific notes:
+"""
+
+    assert extract_clip_prompt(text, "clip-01") == "Keep only the provider prompt."
 
 
 def test_compile_aliyun_reference_prompt_preserves_story_text():

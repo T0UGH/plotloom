@@ -10,7 +10,17 @@ PROMPT_MARKER = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 STOP_MARKER = re.compile(
-    r"^\s*(?:[-*]\s*)?(?:Reference images|Duration hint|Ratio|Ending frame(?:\s*/\s*handoff point)?):",
+    r"^\s*(?:[-*]\s*)?(?:"
+    r"Reference images(?:\s+and\s+purpose)?|"
+    r"Duration hint|"
+    r"Duration seconds|"
+    r"Ratio|"
+    r"Continuity rules|"
+    r"Camera motion|"
+    r"Dialogue\s*/\s*audio window|"
+    r"Ending frame(?:\s*/\s*handoff point)?|"
+    r"Adapter-specific notes"
+    r"):",
     re.IGNORECASE | re.MULTILINE,
 )
 IMAGE_REFERENCE_MODES = {"image-to-video", "reference-to-video"}
@@ -75,7 +85,7 @@ def extract_clip_prompt(text: str, clip: str) -> str:
     stop = STOP_MARKER.search(body)
     if stop:
         body = body[: stop.start()]
-    return body.strip()
+    return _strip_code_fence(body.strip())
 
 
 def compile_prompt(text: str, clip: str, adapter: str, mode: str) -> CompiledPrompt:
@@ -107,3 +117,14 @@ def compile_prompt(text: str, clip: str, adapter: str, mode: str) -> CompiledPro
 def _prepend_instruction(prompt: str, instruction: str) -> str:
     prompt = prompt.strip()
     return f"{instruction}\n{prompt}" if prompt else prompt
+
+
+def _strip_code_fence(value: str) -> str:
+    lines = value.splitlines()
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    while lines and not lines[-1].strip():
+        lines.pop()
+    if len(lines) >= 2 and lines[0].strip().startswith("```") and lines[-1].strip() == "```":
+        return "\n".join(line.strip() for line in lines[1:-1]).strip()
+    return value.strip()
