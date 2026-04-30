@@ -1,3 +1,5 @@
+import json
+
 from click.testing import CliRunner
 
 from plotloom.cli import main
@@ -12,6 +14,9 @@ def test_cli_version_runs():
 
 def test_cli_json_error_shape_for_missing_command():
     result = CliRunner().invoke(main, ["--json", "missing-command"])
+    payload = json.loads(result.output)
 
     assert result.exit_code != 0
-    assert "No such command" in result.output
+    assert payload["ok"] is False
+    assert "No such command" in payload["error"]["message"]
+    assert payload["error"]["code"]

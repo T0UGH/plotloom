@@ -1,11 +1,69 @@
 from __future__ import annotations
 
+import json
+import re
+import sys
+
 import click
 
 from plotloom import __version__
 
 
-@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+def _error_code(error: click.ClickException) -> str:
+    name = error.__class__.__name__
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", name).upper()
+
+
+def _wants_json(args: list[str]) -> bool:
+    return "--json" in args
+
+
+class PlotloomGroup(click.Group):
+    def main(
+        self,
+        args: list[str] | tuple[str, ...] | None = None,
+        prog_name: str | None = None,
+        complete_var: str | None = None,
+        standalone_mode: bool = True,
+        windows_expand_args: bool = True,
+        **extra: object,
+    ) -> object:
+        args_list = list(sys.argv[1:] if args is None else args)
+        try:
+            return super().main(
+                args=args,
+                prog_name=prog_name,
+                complete_var=complete_var,
+                standalone_mode=False,
+                windows_expand_args=windows_expand_args,
+                **extra,
+            )
+        except click.ClickException as error:
+            if _wants_json(args_list):
+                click.echo(
+                    json.dumps(
+                        {
+                            "ok": False,
+                            "error": {
+                                "code": _error_code(error),
+                                "message": error.format_message(),
+                            },
+                        },
+                        ensure_ascii=False,
+                    )
+                )
+            else:
+                error.show()
+            if standalone_mode:
+                sys.exit(error.exit_code)
+            raise
+        except click.exceptions.Exit as error:
+            if standalone_mode:
+                sys.exit(error.exit_code)
+            raise
+
+
+@click.group(cls=PlotloomGroup, context_settings={"help_option_names": ["-h", "--help"]})
 @click.version_option(__version__, prog_name="plotloom")
 @click.option("--repo", type=click.Path(path_type=str), help="Series repo path.")
 @click.option("--config", "config_path", type=click.Path(path_type=str), help="Config file path.")
