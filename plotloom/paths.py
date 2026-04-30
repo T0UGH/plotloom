@@ -13,14 +13,17 @@ def _normalized_suffix(suffix: str) -> str:
 def next_candidate_path(candidates_dir: Path | str, suffix: str, adapter: str | None = None) -> Path:
     candidates_path = Path(candidates_dir)
     normalized_suffix = _normalized_suffix(suffix)
-    pattern = re.compile(rf"^v(?P<number>\d{{3,}})(?:\.[^.]+)?{re.escape(normalized_suffix)}$")
+    pattern = re.compile(r"^v(?P<number>\d{3,})(?:\..+)?$")
     max_number = 0
 
     if candidates_path.exists():
         for path in candidates_path.iterdir():
             if not path.is_file():
                 continue
-            match = pattern.match(path.name)
+            if not path.name.endswith(normalized_suffix):
+                continue
+            version_name = path.name[: -len(normalized_suffix)]
+            match = pattern.match(version_name)
             if match:
                 max_number = max(max_number, int(match.group("number")))
 
