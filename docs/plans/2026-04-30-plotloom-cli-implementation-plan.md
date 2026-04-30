@@ -2078,24 +2078,30 @@ from plotloom.video.types import PlotloomVideoRequest, VideoMode
 
 
 class FakeTasks:
-    def create(self, **kwargs):
-        self.kwargs = kwargs
-        return type("Task", (), {"id": "cgt_123"})()
+    def submit(self, payload, headers):
+        self.payload = payload
+        self.headers = headers
+        return {"id": "cgt_123"}
+
+    def get(self, task_id, headers):
+        self.task_id = task_id
+        self.headers = headers
+        return {"id": task_id, "status": "running"}
 
 
-class FakeContentGeneration:
+class FakeHTTP:
     def __init__(self):
         self.tasks = FakeTasks()
 
-
-class FakeClient:
-    def __init__(self):
-        self.content_generation = FakeContentGeneration()
+    def post(self, url, headers, json, timeout):
+        self.url = url
+        data = self.tasks.submit(json, headers)
+        return type("Resp", (), {"status_code": 200, "json": lambda self: data, "raise_for_status": lambda self: None})()
 
 
 def test_volcengine_submit_returns_task_id(tmp_path):
-    client = FakeClient()
-    adapter = VolcEngineSeedanceAdapter(client=client, model="doubao-seedance-2-0-260128")
+    http = FakeHTTP()
+    adapter = VolcEngineSeedanceAdapter(http=http, ark_api_key="secret", model="doubao-seedance-2-0-260128")
     req = PlotloomVideoRequest(
         repo=tmp_path,
         episode="ep001",
@@ -2112,7 +2118,50 @@ def test_volcengine_submit_returns_task_id(tmp_path):
     result = adapter.submit(req, candidate_path=tmp_path / "v001.mp4")
 
     assert result.provider_task_id == "cgt_123"
-    assert client.content_generation.tasks.kwargs["watermark"] is False
+    assert http.url.endswith("/contents/generations/tasks")
+    assert http.tasks.payload["model"] == "doubao-seedance-2-0-260128"
+    assert http.tasks.payload["content"] == [{"type": "text", "text": "prompt"}]
+    assert http.tasks.payload["generate_audio"] is True
+    assert http.tasks.payload["watermark"] is False
+    assert http.tasks.headers["Authorization"] == "Bearer secret"
+```
+
+Also add a reference-media payload test:
+
+```python
+def test_volcengine_submit_includes_reference_media_urls(tmp_path):
+    http = FakeHTTP()
+    adapter = VolcEngineSeedanceAdapter(http=http, ark_api_key="secret", model="doubao-seedance-2-0-260128")
+    req = PlotloomVideoRequest(
+        repo=tmp_path,
+        episode="ep001",
+        clip="clip-01",
+        adapter="volcengine-seedance",
+        mode=VideoMode.REFERENCE_TO_VIDEO,
+        prompt_file=Path("p.md"),
+        prompt_text="prompt",
+        ratio="16:9",
+        resolution="720p",
+        duration=11,
+    )
+
+    result = adapter.submit(
+        req,
+        candidate_path=tmp_path / "v001.mp4",
+        reference_images=[
+            "https://example.com/r2v_tea_pic1.jpg",
+            "https://example.com/r2v_tea_pic2.jpg",
+        ],
+        reference_videos=["https://example.com/r2v_tea_video1.mp4"],
+        reference_audio="https://example.com/r2v_tea_audio1.mp3",
+    )
+
+    assert result.provider_task_id == "cgt_123"
+    assert http.tasks.payload["ratio"] == "16:9"
+    assert http.tasks.payload["duration"] == 11
+    assert http.tasks.payload["content"][1]["role"] == "reference_image"
+    assert http.tasks.payload["content"][3]["role"] == "reference_video"
+    assert http.tasks.payload["content"][4]["role"] == "reference_audio"
 ```
 
 **Step 2: Run test to verify failure**
@@ -2129,13 +2178,23 @@ Expected: FAIL because adapter does not exist.
 
 Implement:
 
-- client constructor from `volcenginesdkarkruntime import Ark`.
-- submit via `client.content_generation.tasks.create(...)`.
-- `content=[{"type":"text","text": prompt}]` for T2V.
-- add image URL content roles for image/reference modes when URLs are provided.
-- parameters: model, ratio, resolution, duration, `generate_audio`, `watermark=False`, `return_last_frame=True`.
-- poll via `client.content_generation.tasks.get(task_id=...)`.
-- normalize statuses and return `video_url`.
+- Do not hardcode or log API keys. Read `ark_api_key` from `[adapters.volcengine-seedance]` config or `ARK_API_KEY`; tests must use fake strings only.
+- Default `base_url`: `https://ark.cn-beijing.volces.com/api/v3`.
+- Submit endpoint: `POST {base_url}/contents/generations/tasks`.
+- Headers: `Content-Type: application/json`, `Authorization: Bearer <ark_api_key>`.
+- Payload:
+  - `model`: config model, default `doubao-seedance-2-0-260128`.
+  - `content`: list beginning with `{"type": "text", "text": req.prompt_text}`.
+  - image references: `{"type":"image_url","image_url":{"url": ...},"role":"reference_image"}`.
+  - video references: `{"type":"video_url","video_url":{"url": ...},"role":"reference_video"}`.
+  - audio reference: `{"type":"audio_url","audio_url":{"url": ...},"role":"reference_audio"}`.
+  - top-level `generate_audio`, `ratio`, `duration`, `watermark`.
+- Default `generate_audio=True` and `watermark=False`.
+- `duration` should pass through the request value; do not clamp the user's value in the adapter.
+- Poll endpoint: `GET {base_url}/contents/generations/tasks/{task_id}`; normalize statuses and return `video_url`.
+- Keep all automated tests fake-HTTP only. Real submit/poll is manual smoke.
+
+The user provided a working Seedance 2.0 curl example during planning. Use its shape, but do not copy the bearer token into code, tests, docs, or commit messages.
 
 **Step 4: Run tests**
 
