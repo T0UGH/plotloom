@@ -47,7 +47,7 @@ def test_config_doctor_malformed_toml_json_error(tmp_path):
     assert result.exit_code == 2
     payload = json.loads(result.output)
     assert payload["ok"] is False
-    assert payload["command"] == "config"
+    assert payload["command"] == "config.doctor"
     assert payload["error"]["code"] == "CONFIG_ERROR"
     assert "Could not parse config TOML" in payload["error"]["message"]
     assert payload["error"]["next_step"]

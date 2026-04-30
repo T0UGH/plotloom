@@ -23,10 +23,10 @@ def config_group() -> None:
 @click.pass_context
 def config_path(ctx: click.Context) -> None:
     cfg_path = resolve_config_path(ctx.obj.get("config_path"))
-    emit(
-        {"ok": True, "command": "config.path", "config_path": str(cfg_path), "message": str(cfg_path)},
-        as_json=ctx.obj.get("as_json"),
-    )
+    if ctx.obj.get("as_json"):
+        emit({"ok": True, "command": "config.path", "config_path": str(cfg_path)}, as_json=True)
+        return
+    click.echo(str(cfg_path))
 
 
 @config_group.command("init")
@@ -120,4 +120,4 @@ def config_doctor(ctx: click.Context, adapter: str) -> None:
         as_json=ctx.obj.get("as_json"),
     )
     if failed:
-        raise SystemExit(2)
+        ctx.exit(2)

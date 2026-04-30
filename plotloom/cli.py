@@ -29,6 +29,7 @@ def _normalize_json_args(args: list[str]) -> list[str]:
 def _attempted_command(args: list[str]) -> str:
     options_with_values = {"--repo", "--config"}
     flag_options = {"--json", "--quiet", "--dry-run", "-h", "--help"}
+    parts: list[str] = []
     skip_next = False
     for arg in args:
         if skip_next:
@@ -41,8 +42,10 @@ def _attempted_command(args: list[str]) -> str:
             continue
         if arg.startswith("-"):
             continue
-        return arg
-    return "unknown"
+        parts.append(arg)
+        if len(parts) == 2:
+            break
+    return ".".join(parts) if parts else "unknown"
 
 
 def _exit_code(error: click.ClickException) -> int:
@@ -64,7 +67,7 @@ class PlotloomGroup(click.Group):
         args_list = list(sys.argv[1:] if args is None else args)
         normalized_args = _normalize_json_args(args_list)
         try:
-            return super().main(
+            result = super().main(
                 args=normalized_args,
                 prog_name=prog_name,
                 complete_var=complete_var,
@@ -72,6 +75,9 @@ class PlotloomGroup(click.Group):
                 windows_expand_args=windows_expand_args,
                 **extra,
             )
+            if standalone_mode and isinstance(result, int):
+                sys.exit(result)
+            return result
         except PlotloomError as error:
             if _wants_json(args_list):
                 payload = {
