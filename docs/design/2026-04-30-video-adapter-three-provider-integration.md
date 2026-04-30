@@ -154,6 +154,146 @@ Default policy for this phase:
 4. **Audio intent is not binary.** `native_if_supported` means use native audio where available; `require_native` should reject adapters/modes that cannot guarantee native audio.
 5. **Mode mapping must be visible.** Receipt should record both normalized mode and provider native mode/endpoint/command.
 
+## Prompt / reference 也必须适配
+
+不只是 API 参数不同，三家的 **prompt 写法和 reference 绑定方式** 也不同。Plotloom 不能把同一份 `video-prompts-en.md` 原样塞给三家；应该从中文创作源 `video-prompts.md` / 英文模型源 `video-prompts-en.md` 再编译出 provider-specific prompt。
+
+推荐分层：
+
+```text
+video-prompts.md        # 中文创作源，面向贵平/agent review
+video-prompts-en.md     # 英文模型源，保留剧情、镜头、对白、音频意图
+        ↓
+adapter.prompt_compiler.compile(req, provider)
+        ↓
+provider_prompt.txt     # 临时或 receipt 记录 hash；不一定作为长期文件
+```
+
+### Prompt adaptation matrix
+
+| Adapter | Prompt style | Reference binding | Audio / dialogue hint |
+|---|---|---|---|
+| dreamina-cli | 适合 Seedance 连续叙事 prompt；T2V 用完整 cinematic prompt；I2V 强调从首帧延展 | `image2video` 只有单张首帧；`multimodal2video` 可传多图/视频/音频，但 prompt 不显式命名 refs | CLI 暴露的音频能力取决于命令/模型；prompt 可写 sound/dialogue，但不能假设必然原生配音 |
+| happyhorse-fal | Prompt <= 2500 chars；更短、更直接；Ref2V 必须用 `character1`, `character2`... 对应 `image_urls` 顺序 | `image-to-video` 单 `image_url`；`reference-to-video` 1-9 `image_urls`，prompt 中按 `character1..9` 引用；`video-edit` 用 `@Image1..5` | 原生同步音频；可以显式写 spoken line / ambient sound；edit 可 `audio_setting=auto/origin` |
+| volcengine-seedance | 适合 Seedance 长连续叙事 prompt；可以保留时间 beat、镜头路径、对白窗口、声音意图 | `content[]` 里 text + image/video/audio URL；通过 `role=first_frame/reference_image` 表达参考用途 | `generate_audio=true/false` 是参数；prompt 可写 dialogue/sound/BGM，但 adapter 要显式传 generate_audio |
+
+### Provider-specific prompt compilers
+
+#### `dreamina-cli`
+
+T2V prompt：
+
+```text
+A vertical 9:16 cinematic short-drama scene. ...
+Timeline: 0-3s ..., 4-8s ..., 9-15s ...
+Camera: ...
+Dialogue: ...
+Sound: ...
+No subtitles, no watermark, no logo.
+```
+
+I2V prompt 应明确“从首帧延展”：
+
+```text
+Use the input image as the first frame. Keep the character's face, outfit, and environment consistent. The camera slowly pushes in...
+```
+
+`multimodal2video` prompt 不应写 `character1` 这种 HappyHorse 专属标签；如果传多张图，应自然语言说明：
+
+```text
+Use the provided character image as the main character reference and the provided scene image as the environment reference...
+```
+
+#### `happyhorse-fal`
+
+T2V prompt 要压缩到 2500 chars 内。
+
+Ref2V prompt 必须把图片顺序绑定进文本：
+
+```text
+character1 is the young delivery man in the reference image. character2 is the wealthy heiress.
+A vertical 9:16 cinematic short-drama scene: character1 enters the luxury lobby...
+Spoken dialogue: character2 says, "You are the only heir."
+Ambient sound: rain outside, lobby footsteps, tense low strings.
+No subtitles, no logo, no watermark.
+```
+
+Video edit prompt 如果有参考图，使用 `@Image1`：
+
+```text
+Keep the original performance and timing. Replace the background style with @Image1's neon rainy alley look. Preserve the original audio.
+```
+
+#### `volcengine-seedance`
+
+Prompt 可保留 Seedance 风格的连续叙事，但 reference 绑定在 `content[]` role，而不是 `character1` 标签：
+
+```python
+content = [
+  {"type": "text", "text": provider_prompt},
+  {"type": "image_url", "image_url": {"url": first_frame_url}, "role": "first_frame"},
+  {"type": "image_url", "image_url": {"url": character_ref_url}, "role": "reference_image"},
+]
+```
+
+Prompt 文本应写：
+
+```text
+Use the first-frame image as the opening frame. Use the character reference image only for identity, outfit, and facial consistency.
+```
+
+不要写 HappyHorse 的 `character1`，除非实测证明火山也理解这种约定；当前按 role + natural language 更稳。
+
+### Prompt compiler output
+
+Receipt 应记录 prompt 适配结果，便于复现实验：
+
+```toml
+[prompt]
+source_file = "episodes/ep001/video-prompts-en.md"
+source_sha256 = "..."
+compiled_for = "happyhorse-fal"
+compiled_sha256 = "..."
+compiled_chars = 1830
+reference_binding = "character1=assets/cast/hero/character-grid.png; character2=assets/cast/heiress/character-grid.png"
+```
+
+对于临时 `provider_prompt.txt`：
+
+- 可以写到 `episodes/ep001/videos/clip-01/tasks/<adapter>-<timestamp>.prompt.txt` 作为调试材料；
+- 不要把它提升为默认长期创作源；
+- 长期源仍是 `video-prompts.md` / `video-prompts-en.md`。
+
+## Downloaded adapter docs
+
+已把接入文档快照下载到 repo，方便后续实现时离线查看和 diff：
+
+```text
+docs/references/video-adapters/2026-04-30/
+  dreamina-cli/
+    text2video-help.txt
+    image2video-help.txt
+    multiframe2video-help.txt
+    multimodal2video-help.txt
+    query-result-help.txt
+  fal-happyhorse/
+    authentication.md
+    client-setup.md
+    queue.md
+    pricing.md
+    text-to-video-api.html
+    image-to-video-api.html
+    reference-to-video-api.html
+    video-edit-api.html
+  volcengine-seedance/
+    seedance-2-api-reference.html
+    video-generation-api.html
+    query-video-generation-task-api.html
+    seedance-sdk-examples.html
+```
+
+注意：fal 的 `.md` 文档是可读 Markdown；fal/VolcEngine 的 API 页面保存的是 HTML 快照，后续实现时应以在线最新文档或平台 API 返回为准。
+
 ## 统一命令面
 
 统一命令面只表达 Plotloom 意图；adapter 负责校验和映射到底层参数。建议先不做复杂推断，显式 adapter + mode：

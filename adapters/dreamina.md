@@ -31,6 +31,19 @@ Pass condition:
 
 Do not auto-login from Plotloom. Login is a host setup step.
 
+## Prompt / reference format
+
+- Use Seedance-style continuous cinematic prompts.
+- `text2video`: full prompt may include timeline beats, camera, dialogue, sound, and negative instructions.
+- `image2video`: prompt must say the input image is the first frame and request identity/outfit/environment consistency.
+- `multimodal2video`: pass local image/video/audio refs with flags; prompt should describe their semantic role in natural language, not `character1` labels.
+
+Example I2V prompt:
+
+```text
+Use the input image as the first frame. Keep the character's face, outfit, and environment consistent. The camera slowly pushes in as rain hits the glass lobby doors. Dialogue: "You are the only heir." No subtitles, no logo, no watermark.
+```
+
 ## Text-to-video submit
 
 ```bash

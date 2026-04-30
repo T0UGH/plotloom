@@ -1,0 +1,32 @@
+Usage:
+  dreamina text2video [flags]
+
+Submit a Dreamina text-to-video task. The task is asynchronous, but --poll can wait briefly before falling back to query_result.
+
+Supported combinations:
+- model_version: seedance2.0, seedance2.0fast, seedance2.0_vip, seedance2.0fast_vip
+- ratio: 1:1, 3:4, 16:9, 4:3, 9:16, 21:9
+- seedance2.0 family -> video_resolution 720p; duration 4-15s
+
+Notes:
+- default model_version: seedance2.0fast
+- omit --video_resolution to use the model default
+- omit --ratio to use the default ratio
+- 部分高内容安全风险模型在首次使用前，可能需要先在 Dreamina Web 端完成授权确认。若返回 AigcComplianceConfirmationRequired，请先完成授权后重试。
+
+
+Flags:
+      --prompt string             generation prompt
+      --session int               session id (default 0 "默认对话") 
+      --duration int              video duration in seconds; supported range: 4-15 (default 5)
+      --ratio string              supported values: 1:1, 3:4, 16:9, 4:3, 9:16, 21:9
+      --video_resolution string   supported values: 720p
+      --model_version string      supported values: seedance2.0, seedance2.0fast, seedance2.0_vip, seedance2.0fast_vip; default: seedance2.0fast
+      --poll int                  submit then poll query_result for up to N seconds at 1s intervals (0 disables polling)
+  -h, --help                      help for text2video
+
+Global Flags:
+      --version   print build version information
+
+Examples:
+  dreamina text2video --prompt="a cat running" --duration=5

@@ -1,0 +1,32 @@
+Usage:
+  dreamina image2video [flags]
+
+Upload one local image, then submit a Dreamina image-to-video task. For multi-image storytelling, use multiframe2video; for full-reference mixed-media generation, use multimodal2video. The task is asynchronous, but --poll can wait briefly before falling back to query_result.
+
+Supported combinations:
+- basic usage: --image + --prompt
+- advanced controls: set any of --duration, --video_resolution, or --model_version
+- advanced model_version values: 3.0, 3.0fast, 3.0pro, 3.0_fast, 3.0_pro, 3.5pro, 3.5_pro, seedance2.0, seedance2.0fast, seedance2.0_vip, seedance2.0fast_vip
+- ratio is inferred from the input image and is not set on this command
+
+Notes:
+- omit advanced controls to use the default image-to-video path
+- duration, model_version, and video_resolution must be provided in a supported combination
+- 部分高内容安全风险模型在首次使用前，可能需要先在 Dreamina Web 端完成授权确认。若返回 AigcComplianceConfirmationRequired，请先完成授权后重试。
+
+
+Flags:
+      --image string              local first-frame image path
+      --prompt string             generation prompt
+      --duration int              advanced controls only; supported duration ranges by model: 3.0/3.0fast/3.0pro -> 3-10, 3.5pro -> 4-12, seedance2.0 family -> 4-15 (default 5)
+      --video_resolution string   advanced controls only; supported values by model: 3.0/3.0fast/3.5pro -> 720p or 1080p, 3.0pro -> 1080p, seedance2.0 family -> 720p
+      --model_version string      advanced controls only; supported values: 3.0, 3.0fast, 3.0pro, 3.0_fast, 3.0_pro, 3.5pro, 3.5_pro, seedance2.0, seedance2.0fast, seedance2.0_vip, seedance2.0fast_vip
+      --session int               session id (default 0 "默认对话") 
+      --poll int                  submit then poll query_result for up to N seconds at 1s intervals (0 disables polling)
+  -h, --help                      help for image2video
+
+Global Flags:
+      --version   print build version information
+
+Examples:
+  dreamina image2video --image=./first.png --prompt="camera push in"

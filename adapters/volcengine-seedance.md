@@ -37,6 +37,22 @@ client = Ark(
 )
 ```
 
+## Prompt / reference format
+
+- Use Seedance-style continuous narrative prompts with timeline beats, camera path, dialogue window, and sound intent.
+- Do not use HappyHorse-specific `character1` labels by default.
+- Bind references through `content[]` roles such as `first_frame` or `reference_image`, and reinforce the role in natural language.
+- `generate_audio=true/false` is a native parameter; prompt can describe sound/dialogue but adapter must pass the parameter explicitly.
+
+Example provider prompt:
+
+```text
+Use the first-frame image as the opening frame. Use the character reference image only for identity, outfit, and facial consistency.
+A vertical 9:16 cinematic short-drama scene. 0-3s: the delivery man steps into a rainy luxury lobby...
+Dialogue window: the heiress whispers, "You are the only heir."
+Sound: rain outside, marble footsteps, tense low strings. No subtitles, no logo, no watermark.
+```
+
 ## Submit
 
 ```python

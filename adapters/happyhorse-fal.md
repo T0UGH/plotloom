@@ -34,6 +34,23 @@ alibaba/happy-horse/reference-to-video
 alibaba/happy-horse/video-edit
 ```
 
+## Prompt / reference format
+
+- T2V/I2V prompt max: 2500 chars.
+- Ref2V prompt must refer to image order as `character1`, `character2`, ... up to `character9`.
+- Video edit prompt should refer to reference images as `@Image1`, `@Image2`, ... up to `@Image5`.
+- Do not pass Plotloom's full Markdown prompt file directly; compile a short provider prompt first.
+
+Ref2V example:
+
+```text
+character1 is the young delivery man. character2 is the wealthy heiress.
+A vertical 9:16 cinematic short-drama scene: character1 enters the luxury lobby while character2 turns in shock.
+Spoken dialogue: character2 says, "You are the only heir."
+Ambient sound: rain outside, lobby footsteps, tense low strings.
+No subtitles, no logo, no watermark.
+```
+
 ## Submit
 
 ```python
