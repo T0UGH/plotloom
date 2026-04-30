@@ -94,9 +94,7 @@ def compile_prompt(text: str, clip: str, adapter: str, mode: str) -> CompiledPro
     normalized_adapter = adapter.strip().lower()
     normalized_mode = mode.strip().lower()
 
-    if normalized_adapter == "aliyun-bailian-wan" and normalized_mode in IMAGE_REFERENCE_MODES:
-        prompt = _prepend_instruction(prompt, "Use provided images only as visual references.")
-    elif normalized_adapter == "volcengine-seedance" and normalized_mode in IMAGE_REFERENCE_MODES:
+    if normalized_adapter == "volcengine-seedance" and normalized_mode in IMAGE_REFERENCE_MODES:
         prompt = _prepend_instruction(prompt, "Use attached images by their request roles: first_frame and reference_image.")
     elif not normalized_adapter:
         warnings.append("adapter is empty; compiled provider-neutral prompt")

@@ -123,7 +123,7 @@ def compile_command(
 @prompt_group.command("check")
 @click.option("--episode", required=True)
 @click.option("--clip")
-@click.option("--adapter", default="aliyun-bailian-wan", show_default=True)
+@click.option("--adapter", default="dreamina-cli", show_default=True)
 @click.option("--mode", default="text-to-video", show_default=True, type=click.Choice(MODES))
 @click.option("--prompt-file", type=click.Path(path_type=str))
 @click.pass_context

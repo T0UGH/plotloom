@@ -12,11 +12,10 @@ def test_candidate_numbering_skips_adapter_suffixes(tmp_path):
     candidates = tmp_path / "candidates"
     candidates.mkdir()
     (candidates / "v001.dreamina-cli.mp4").write_bytes(b"first")
-    (candidates / "v002.aliyun-bailian-wan.mp4").write_bytes(b"second")
 
     path = next_candidate_path(candidates, ".mp4", adapter="volcengine-seedance")
 
-    assert path == candidates / "v003.volcengine-seedance.mp4"
+    assert path == candidates / "v002.volcengine-seedance.mp4"
 
 
 def test_candidate_numbering_counts_dotted_adapter_suffixes(tmp_path):
@@ -30,7 +29,7 @@ def test_candidate_numbering_counts_dotted_adapter_suffixes(tmp_path):
 
 
 def test_selected_for_candidate_maps_to_sibling_selected_file(tmp_path):
-    candidate = tmp_path / "videos" / "candidates" / "v001.aliyun-bailian-wan.mp4"
+    candidate = tmp_path / "videos" / "candidates" / "v001.volcengine-seedance.mp4"
 
     assert selected_for_candidate(candidate) == tmp_path / "videos" / "selected.mp4"
 
@@ -49,7 +48,7 @@ def test_selected_for_candidate_rejects_non_candidate_path(tmp_path):
 def test_select_copies_candidate_and_backs_up_previous_selected(tmp_path):
     candidates = tmp_path / "videos" / "candidates"
     candidates.mkdir(parents=True)
-    candidate = candidates / "v001.aliyun-bailian-wan.mp4"
+    candidate = candidates / "v001.volcengine-seedance.mp4"
     selected = tmp_path / "videos" / "selected.mp4"
     candidate.write_bytes(b"new candidate")
     selected.write_bytes(b"old selected")

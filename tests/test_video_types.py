@@ -41,40 +41,12 @@ def test_video_request_defaults():
 
 def test_capabilities_for_current_provider_set_only():
     assert capabilities_for("dreamina-cli").adapter == "dreamina-cli"
-    assert capabilities_for("aliyun-bailian-wan").adapter == "aliyun-bailian-wan"
     assert capabilities_for("volcengine-seedance").adapter == "volcengine-seedance"
 
     with pytest.raises(ValueError, match="unknown video adapter"):
+        capabilities_for("aliyun-bailian-wan")
+    with pytest.raises(ValueError, match="unknown video adapter"):
         capabilities_for("unknown-provider")
-
-
-def test_aliyun_bailian_rejects_too_long_prompt():
-    req = make_request(
-        adapter="aliyun-bailian-wan",
-        prompt_file=Path("p.md"),
-        prompt_text="x" * 5001,
-    )
-
-    result = validate_request(req, capabilities_for("aliyun-bailian-wan"))
-
-    assert not result.ok
-    assert result.issues[0].code == "PROMPT_TOO_LONG"
-
-
-def test_aliyun_bailian_uses_current_wan_t2v_constraints():
-    req = make_request(
-        adapter="aliyun-bailian-wan",
-        prompt_text="x" * 5000,
-        ratio="3:4",
-        resolution="1080p",
-        duration=2,
-        seed=123,
-        audio_intent="require_native",
-    )
-
-    result = validate_request(req, capabilities_for("aliyun-bailian-wan"))
-
-    assert result.ok
 
 
 def test_capability_sets_cannot_poison_future_results():
@@ -118,7 +90,7 @@ def test_volcengine_requires_native_audio_when_requested():
 def test_seed_and_video_edit_are_rejected_for_mvp_adapters():
     seed_req = make_request(adapter="volcengine-seedance", seed=123)
     edit_req = make_request(
-        adapter="aliyun-bailian-wan",
+        adapter="volcengine-seedance",
         mode=VideoMode.VIDEO_EDIT,
         source_video=Path("episodes/ep001/videos/source.mp4"),
     )

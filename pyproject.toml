@@ -14,7 +14,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-happyhorse = ["fal-client>=0.7.0"]
 volcengine = ["volcengine-python-sdk[ark]>=5.0.0"]
 dev = ["pytest>=8", "ruff>=0.5"]
 

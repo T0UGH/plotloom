@@ -2,11 +2,11 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Build a production-usable Plotloom Python CLI covering config, repo discovery/init/validate, prompt compile, image generation through local Codex image generation, mock media E2E, and real Dreamina / Aliyun Bailian Wan / VolcEngine submit-poll adapters with visible receipts.
+**Goal:** Build a production-usable Plotloom Python CLI covering config, repo discovery/init/validate, prompt compile, image generation through local Codex image generation, mock media E2E, and real Dreamina / VolcEngine submit-poll adapters with visible receipts.
 
 **Architecture:** Implement a small Python package under `plotloom/` with Click commands that orchestrate deterministic helpers, adapter interfaces, TOML config/receipt files, and local media validation. Keep all production state visible in the series repo except user-level secrets in `~/.plotloom/.env.toml`; do not introduce a daemon, database, dashboard, hidden queue, or persistent JSON/YAML workflow artifact.
 
-**Tech Stack:** Python 3.11+, Click, stdlib `tomllib`, `tomli-w`, `requests`, optional `dashscope`, optional `volcengine-python-sdk[ark]`, local `codex exec --enable image_generation`, external `dreamina`, `ffmpeg`, `ffprobe`, pytest.
+**Tech Stack:** Python 3.11+, Click, stdlib `tomllib`, `tomli-w`, `requests`, optional `volcengine-python-sdk[ark]`, local `codex exec --enable image_generation`, external `dreamina`, `ffmpeg`, `ffprobe`, pytest.
 
 ---
 
@@ -14,20 +14,19 @@
 
 Read these before starting:
 
-- Provider pivot: older design docs may still mention `happyhorse-fal`; for implementation, replace that provider with `aliyun-bailian-wan` and use `adapters/aliyun-bailian-wan.md`.
+- Provider scope update: older design docs may still mention `happyhorse-fal` or `aliyun-bailian-wan`; for this implementation, do not build either. Video providers are `dreamina-cli` and `volcengine-seedance` only.
 - `docs/design/2026-04-30-plotloom-cli-technical-design.md`
 - `docs/design/2026-04-30-plotloom-cli-command-surface.md`
 - `docs/design/2026-04-30-plotloom-cli-contract-details.md`
 - `adapters/codex.md`
 - `adapters/dreamina.md`
-- `adapters/aliyun-bailian-wan.md`
 - `adapters/volcengine-seedance.md`
 - Existing helper scripts: `scripts/init_series.py`, `scripts/validate_repo.py`, `scripts/select_candidate.py`, `scripts/ffprobe_media.py`, `scripts/stitch_ffmpeg.py`, `scripts/adapters/fake_video.py`
 
 ## Non-Negotiable Boundaries
 
-- Current checkpoint: Tasks 1-3 were implemented before the provider pivot. Do not redo them. Before the first provider/capability task, migrate any implemented `happyhorse-fal` config defaults/tests to `aliyun-bailian-wan`.
-- Default automated tests must not call Dreamina, Aliyun Bailian, VolcEngine, or real Codex image generation.
+- Current checkpoint: Tasks 1-3 were implemented before the provider scope was narrowed. Do not redo them. Before provider tasks, remove any implemented `happyhorse-fal` or `aliyun-bailian-wan` config defaults/tests.
+- Default automated tests must not call Dreamina, VolcEngine, or real Codex image generation.
 - Real provider E2E is manual only through `doctor` and smoke commands.
 - `video submit` must run provider-aware prompt compile/check before submit.
 - Do not print or persist secrets. Show only `present/absent` and `credential_source`.
@@ -96,7 +95,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-aliyun = ["dashscope>=1.25.8"]
 volcengine = ["volcengine-python-sdk[ark]>=5.0.0"]
 dev = ["pytest>=8", "ruff>=0.5"]
 
@@ -237,12 +235,12 @@ def test_config_init_writes_template_with_private_permissions(tmp_path):
 
 def test_config_env_overrides_toml(tmp_path, monkeypatch):
     cfg = tmp_path / ".env.toml"
-    cfg.write_text('[adapters.aliyun-bailian-wan]\ndashscope_api_key = "from-file"\n', encoding="utf-8")
-    monkeypatch.setenv("DASHSCOPE_API_KEY", "from-env")
+    cfg.write_text('[adapters.volcengine-seedance]\nark_api_key = "from-file"\n', encoding="utf-8")
+    monkeypatch.setenv("ARK_API_KEY", "from-env")
 
     loaded = load_config(cfg)
 
-    assert loaded.adapter_value("aliyun-bailian-wan", "dashscope_api_key") == "from-env"
+    assert loaded.adapter_value("volcengine-seedance", "ark_api_key") == "from-env"
 ```
 
 **Step 2: Run tests to verify failure**
@@ -280,9 +278,6 @@ ENV_MAP = {
     ("adapters.codex-app-server", "app_server_url"): "CODEX_APP_SERVER_URL",
     ("adapters.dreamina-cli", "binary"): "DREAMINA_BINARY",
     ("adapters.dreamina-cli", "home"): "DREAMINA_HOME",
-    ("adapters.aliyun-bailian-wan", "dashscope_api_key"): "DASHSCOPE_API_KEY",
-    ("adapters.aliyun-bailian-wan", "base_url"): "PLOTLOOM_ALIYUN_BAILIAN_BASE_URL",
-    ("adapters.aliyun-bailian-wan", "model"): "PLOTLOOM_ALIYUN_BAILIAN_MODEL",
     ("adapters.volcengine-seedance", "ark_api_key"): "ARK_API_KEY",
     ("adapters.volcengine-seedance", "base_url"): "PLOTLOOM_VOLCENGINE_BASE_URL",
     ("adapters.volcengine-seedance", "model"): "PLOTLOOM_VOLCENGINE_MODEL",
@@ -293,18 +288,11 @@ DEFAULT_TEMPLATE = {
         "repos_root": "~/plotloom_repo",
         "registry_path": "~/plotloom.toml",
         "default_image_adapter": "codex-app-server",
-        "default_video_adapters": ["dreamina-cli", "aliyun-bailian-wan", "volcengine-seedance"],
+        "default_video_adapters": ["dreamina-cli", "volcengine-seedance"],
     },
     "adapters": {
         "codex-app-server": {"enabled": True, "codex_binary": "codex", "app_server_url": ""},
         "dreamina-cli": {"enabled": True, "binary": "dreamina", "home": "~"},
-        "aliyun-bailian-wan": {
-            "enabled": True,
-            "dashscope_api_key": "",
-            "base_url": "https://dashscope.aliyuncs.com/api/v1",
-            "model": "wan2.6-t2v",
-            "default_resolution": "720p",
-        },
         "volcengine-seedance": {
             "enabled": True,
             "ark_api_key": "",
@@ -932,9 +920,8 @@ def test_next_candidate_path_skips_adapter_suffixes(tmp_path):
     candidates = tmp_path / "candidates"
     candidates.mkdir()
     (candidates / "v001.dreamina-cli.mp4").write_text("x")
-    (candidates / "v002.aliyun-bailian-wan.mp4").write_text("x")
 
-    assert next_candidate_path(candidates, ".mp4", adapter="volcengine-seedance").name == "v003.volcengine-seedance.mp4"
+    assert next_candidate_path(candidates, ".mp4", adapter="volcengine-seedance").name == "v002.volcengine-seedance.mp4"
 
 
 def test_select_copies_and_backs_up(tmp_path):
@@ -1302,8 +1289,8 @@ def test_extract_clip_prompt_string():
     assert "Reference images" not in prompt
 
 
-def test_compile_aliyun_reference_prompt_preserves_story_text():
-    compiled = compile_prompt(PROMPTS, "clip-01", adapter="aliyun-bailian-wan", mode="reference-to-video")
+def test_compile_volcengine_reference_prompt_preserves_story_text():
+    compiled = compile_prompt(PROMPTS, "clip-01", adapter="volcengine-seedance", mode="reference-to-video")
 
     assert "rainy lobby" in compiled.prompt_text
     assert compiled.prompt_chars == len(compiled.prompt_text)
@@ -1379,8 +1366,6 @@ def extract_clip_prompt(text: str, clip: str) -> str:
 def compile_prompt(text: str, clip: str, *, adapter: str, mode: str) -> CompiledPrompt:
     prompt = extract_clip_prompt(text, clip)
     warnings: list[str] = []
-    if adapter == "aliyun-bailian-wan" and mode in {"image-to-video", "reference-to-video"}:
-        prompt = "Use the provided image URLs as first-frame or character-reference intent according to request metadata.\n" + prompt
     if adapter == "volcengine-seedance" and mode in {"image-to-video", "reference-to-video"}:
         prompt = "Use attached image roles according to the request metadata.\n" + prompt
     if not prompt:
@@ -1449,24 +1434,25 @@ def test_video_request_defaults():
     assert req.reference_images == []
 
 
-def test_aliyun_bailian_rejects_too_long_prompt():
+def test_current_provider_set_only():
     req = PlotloomVideoRequest(
         repo=Path("/tmp/series"),
         episode="ep001",
         clip="clip-01",
-        adapter="aliyun-bailian-wan",
+        adapter="dreamina-cli",
         mode=VideoMode.TEXT_TO_VIDEO,
         prompt_file=Path("p.md"),
-        prompt_text="x" * 5001,
+        prompt_text="prompt",
         ratio="9:16",
         resolution="720p",
         duration=5,
     )
 
-    result = validate_request(req, capabilities_for("aliyun-bailian-wan"))
+    assert validate_request(req, capabilities_for("dreamina-cli")).ok
+    assert capabilities_for("volcengine-seedance").adapter == "volcengine-seedance"
 
-    assert not result.ok
-    assert result.issues[0].code == "PROMPT_TOO_LONG"
+    with pytest.raises(ValueError, match="unknown video adapter"):
+        capabilities_for("aliyun-bailian-wan")
 ```
 
 **Step 2: Run tests to verify failure**
@@ -2069,105 +2055,9 @@ git add plotloom/video/adapters/dreamina_cli.py tests/test_dreamina_adapter.py
 git commit -m "feat: add dreamina video adapter"
 ```
 
-## Task 13: Aliyun Bailian Wan Adapter
+## Task 13: Reserved For Future Bailian Adapter
 
-**Files:**
-- Create: `plotloom/video/adapters/aliyun_bailian_wan.py`
-- Modify: `plotloom/commands/video.py`
-- Test: `tests/test_aliyun_bailian_wan_adapter.py`
-
-**Step 1: Write failing Bailian tests using fake HTTP client**
-
-Create `tests/test_aliyun_bailian_wan_adapter.py`:
-
-```python
-from pathlib import Path
-
-from plotloom.video.adapters.aliyun_bailian_wan import AliyunBailianWanAdapter
-from plotloom.video.types import PlotloomVideoRequest, VideoMode
-
-
-class FakeHTTP:
-    def post(self, url, headers, json, timeout):
-        self.url = url
-        self.headers = headers
-        self.json = json
-        return type("Resp", (), {"status_code": 200, "json": lambda self: {"output": {"task_id": "task_123"}}})()
-
-
-def test_aliyun_bailian_submit_returns_task_id(tmp_path):
-    fake = FakeHTTP()
-    adapter = AliyunBailianWanAdapter(http=fake, dashscope_api_key="secret")
-    req = PlotloomVideoRequest(
-        repo=tmp_path,
-        episode="ep001",
-        clip="clip-01",
-        adapter="aliyun-bailian-wan",
-        mode=VideoMode.TEXT_TO_VIDEO,
-        prompt_file=Path("p.md"),
-        prompt_text="prompt",
-        ratio="9:16",
-        resolution="720p",
-        duration=5,
-    )
-
-    result = adapter.submit(req, candidate_path=tmp_path / "v001.mp4")
-
-    assert result.provider_task_id == "task_123"
-    assert fake.url.endswith("/services/aigc/video-generation/video-synthesis")
-    assert fake.headers["X-DashScope-Async"] == "enable"
-    assert fake.headers["Authorization"] == "Bearer secret"
-```
-
-**Step 2: Run test to verify failure**
-
-Run:
-
-```bash
-python3 -m pytest tests/test_aliyun_bailian_wan_adapter.py -v
-```
-
-Expected: FAIL because adapter does not exist.
-
-**Step 3: Implement Aliyun Bailian Wan adapter**
-
-Implement HTTP task submit against DashScope Model Studio:
-
-- default `base_url`: `https://dashscope.aliyuncs.com/api/v1`
-- `text-to-video`: `POST /services/aigc/video-generation/video-synthesis`
-- header `X-DashScope-Async: enable`
-- header `Authorization: Bearer <DASHSCOPE_API_KEY>`
-- default model: `wan2.6-t2v` unless config overrides it.
-- payload: `{"model": model, "input": {"prompt": req.prompt_text}, "parameters": {"size": size_for(req), "prompt_extend": true, "watermark": false}}`
-
-Implement local input handling:
-
-- Bailian video APIs prefer HTTP URLs for image/video inputs. In this phase, reject local-only `first_frame`, `reference_images`, and `source_video` unless they have already been imported to a reachable URL or a later asset upload step provides one.
-- Map `image-to-video` only after confirming the exact Bailian Wan endpoint/body in the referenced docs; do not reuse fal/Horse parameter names.
-- Treat `reference-to-video` as provider-specific VACE/reference mode only after a small docs/API spike confirms the endpoint and body shape.
-
-Implement poll:
-
-- `GET /tasks/{task_id}` with `Authorization: Bearer <DASHSCOPE_API_KEY>`.
-- normalize DashScope task statuses into Plotloom receipt statuses.
-- return the temporary output video URL and download it immediately during `video poll`.
-
-**Step 4: Run tests**
-
-Run:
-
-```bash
-python3 -m pytest tests/test_aliyun_bailian_wan_adapter.py tests/test_video_types.py -v
-```
-
-Expected: PASS.
-
-**Step 5: Commit**
-
-```bash
-git add plotloom/video/adapters/aliyun_bailian_wan.py tests/test_aliyun_bailian_wan_adapter.py
-git commit -m "feat: add aliyun bailian wan video adapter"
-```
+Skip this task in the current implementation. The current video provider scope is `dreamina-cli` and `volcengine-seedance` only. Do not add Aliyun Bailian config, dependencies, doctor checks, submit/poll code, or tests in this phase.
 
 ## Task 14: VolcEngine Seedance Adapter
 
@@ -2579,14 +2469,14 @@ def import_status(module: str) -> dict[str, str | bool]:
 Create `plotloom/commands/doctor.py` with:
 
 ```bash
-plotloom doctor --adapter all|codex-app-server|dreamina-cli|aliyun-bailian-wan|volcengine-seedance --deep
+plotloom doctor --adapter all|codex-app-server|dreamina-cli|volcengine-seedance --deep
 ```
 
 Checks:
 
 - config parse and permissions;
 - `codex`, `dreamina`, `ffmpeg`, `ffprobe` binaries;
-- `dashscope` and `volcenginesdkarkruntime` imports;
+- `volcenginesdkarkruntime` imports;
 - secret presence only as present/absent.
 
 No paid provider submit in doctor.
@@ -2778,7 +2668,7 @@ git commit -m "refactor: share cli helpers with scripts"
 
 Create `docs/runbooks/plotloom-provider-smoke.md` with:
 
-- prerequisite checklist for `dreamina-cli`, `aliyun-bailian-wan`, `volcengine-seedance`;
+- prerequisite checklist for `dreamina-cli` and `volcengine-seedance`;
 - exact `plotloom config doctor` commands;
 - exact text-to-video smoke commands;
 - exact poll commands;
@@ -2933,7 +2823,6 @@ Manual commands:
 
 ```bash
 plotloom doctor --adapter dreamina-cli --deep
-plotloom doctor --adapter aliyun-bailian-wan --deep
 plotloom doctor --adapter volcengine-seedance --deep
 ```
 

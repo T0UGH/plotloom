@@ -20,7 +20,6 @@ ENV_MAP = {
     ("adapters.codex-app-server", "app_server_url"): "CODEX_APP_SERVER_URL",
     ("adapters.dreamina-cli", "binary"): "DREAMINA_BINARY",
     ("adapters.dreamina-cli", "home"): "DREAMINA_HOME",
-    ("adapters.happyhorse-fal", "fal_key"): "FAL_KEY",
     ("adapters.volcengine-seedance", "ark_api_key"): "ARK_API_KEY",
     ("adapters.volcengine-seedance", "base_url"): "PLOTLOOM_VOLCENGINE_BASE_URL",
     ("adapters.volcengine-seedance", "model"): "PLOTLOOM_VOLCENGINE_MODEL",
@@ -31,12 +30,11 @@ DEFAULT_TEMPLATE = {
         "repos_root": "~/plotloom_repo",
         "registry_path": "~/plotloom.toml",
         "default_image_adapter": "codex-app-server",
-        "default_video_adapters": ["dreamina-cli", "happyhorse-fal", "volcengine-seedance"],
+        "default_video_adapters": ["dreamina-cli", "volcengine-seedance"],
     },
     "adapters": {
         "codex-app-server": {"enabled": True, "codex_binary": "codex", "app_server_url": ""},
         "dreamina-cli": {"enabled": True, "binary": "dreamina", "home": "~"},
-        "happyhorse-fal": {"enabled": True, "fal_key": "", "default_resolution": "720p"},
         "volcengine-seedance": {
             "enabled": True,
             "ark_api_key": "",

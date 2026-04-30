@@ -93,18 +93,6 @@ def test_extract_template_prompt_stops_before_following_template_fields():
     assert extract_clip_prompt(text, "clip-01") == "Keep only the provider prompt."
 
 
-def test_compile_aliyun_reference_prompt_preserves_story_text():
-    compiled = compile_prompt(PROMPTS, "clip-01", adapter="aliyun-bailian-wan", mode="reference-to-video")
-
-    assert "Use provided images only as visual references." in compiled.prompt_text
-    assert "rainy lobby" in compiled.prompt_text
-    assert compiled.prompt_chars == len(compiled.prompt_text)
-    assert compiled.prompt_sha256 == hashlib.sha256(compiled.prompt_text.encode("utf-8")).hexdigest()
-    assert compiled.sha256 == compiled.prompt_sha256
-    assert compiled.to_dict()["sha256"] == compiled.prompt_sha256
-    assert compiled.warnings == []
-
-
 def test_compile_volcengine_reference_prompt_adds_image_role_instruction():
     compiled = compile_prompt(PROMPTS, "clip-01", adapter="volcengine-seedance", mode="image-to-video")
 
@@ -113,9 +101,14 @@ def test_compile_volcengine_reference_prompt_adds_image_role_instruction():
 
 
 def test_compile_text_to_video_does_not_add_image_instruction():
-    compiled = compile_prompt(PROMPTS, "clip-01", adapter="aliyun-bailian-wan", mode="text-to-video")
+    compiled = compile_prompt(PROMPTS, "clip-01", adapter="dreamina-cli", mode="text-to-video")
 
     assert compiled.prompt_text.startswith("A vertical short-drama")
+    assert compiled.prompt_chars == len(compiled.prompt_text)
+    assert compiled.prompt_sha256 == hashlib.sha256(compiled.prompt_text.encode("utf-8")).hexdigest()
+    assert compiled.sha256 == compiled.prompt_sha256
+    assert compiled.to_dict()["sha256"] == compiled.prompt_sha256
+    assert compiled.warnings == []
 
 
 def test_compile_empty_prompt_fails_clearly():
@@ -128,7 +121,7 @@ Reference images:
 """
 
     try:
-        compile_prompt(text, "clip-01", adapter="aliyun-bailian-wan", mode="text-to-video")
+        compile_prompt(text, "clip-01", adapter="dreamina-cli", mode="text-to-video")
     except ValueError as error:
         assert "compiled prompt is empty" in str(error)
     else:
@@ -173,7 +166,7 @@ def test_prompt_compile_command_json(tmp_path):
             "--clip",
             "clip-01",
             "--adapter",
-            "aliyun-bailian-wan",
+            "volcengine-seedance",
             "--mode",
             "reference-to-video",
         ],
@@ -183,7 +176,7 @@ def test_prompt_compile_command_json(tmp_path):
     payload = json.loads(result.output)
     assert payload["ok"] is True
     assert payload["command"] == "prompt.compile"
-    assert payload["adapter"] == "aliyun-bailian-wan"
+    assert payload["adapter"] == "volcengine-seedance"
     assert payload["prompt_chars"] == len(payload["prompt_text"])
     assert payload["sha256"] == payload["prompt_sha256"]
     assert "rainy lobby" in payload["prompt_text"]

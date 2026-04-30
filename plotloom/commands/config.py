@@ -10,7 +10,7 @@ import tomli_w
 from plotloom.config import DEFAULT_TEMPLATE, load_config, permission_warning, resolve_config_path, write_default_config
 from plotloom.output import emit
 
-KNOWN_ADAPTERS = ("codex-app-server", "dreamina-cli", "happyhorse-fal", "volcengine-seedance")
+KNOWN_ADAPTERS = ("codex-app-server", "dreamina-cli", "volcengine-seedance")
 ADAPTER_CHOICES = (*KNOWN_ADAPTERS, "all")
 
 
@@ -67,11 +67,6 @@ def _check_adapter(cfg: Any, adapter: str) -> dict[str, dict[str, str]]:
         return {"codex_binary": _binary_check(cfg.adapter_value(adapter, "codex_binary", "codex"))}
     if adapter == "dreamina-cli":
         return {"binary": _binary_check(cfg.adapter_value(adapter, "binary", "dreamina"))}
-    if adapter == "happyhorse-fal":
-        return {
-            "fal_key": _secret_check(cfg.value_source("adapters.happyhorse-fal", "fal_key")),
-            "fal_client": _dependency_check("fal_client"),
-        }
     if adapter == "volcengine-seedance":
         return {
             "ark_api_key": _secret_check(cfg.value_source("adapters.volcengine-seedance", "ark_api_key")),

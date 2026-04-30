@@ -4,7 +4,6 @@ from plotloom.video.types import PlotloomVideoRequest, ValidationIssue, Validati
 
 
 DREAMINA_RATIOS = frozenset({"1:1", "3:4", "16:9", "4:3", "9:16", "21:9"})
-ALIYUN_BAILIAN_T2V_RATIOS = frozenset({"1:1", "3:4", "16:9", "4:3", "9:16"})
 VOLCENGINE_RATIOS = DREAMINA_RATIOS | frozenset({"adaptive"})
 
 
@@ -21,22 +20,6 @@ def capabilities_for(adapter: str) -> VideoAdapterCapabilities:
             supports_native_audio=False,
             supports_seed=False,
             supports_first_frame=True,
-            supports_reference_images=False,
-            supports_reference_videos=False,
-            supports_video_edit=False,
-        )
-    if adapter == "aliyun-bailian-wan":
-        return VideoAdapterCapabilities(
-            adapter="aliyun-bailian-wan",
-            modes=frozenset({VideoMode.TEXT_TO_VIDEO}),
-            min_duration=2,
-            max_duration=15,
-            ratios=ALIYUN_BAILIAN_T2V_RATIOS,
-            resolutions=frozenset({"720p", "1080p"}),
-            max_prompt_chars=5000,
-            supports_native_audio=True,
-            supports_seed=True,
-            supports_first_frame=False,
             supports_reference_images=False,
             supports_reference_videos=False,
             supports_video_edit=False,
