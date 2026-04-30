@@ -107,6 +107,7 @@ Reason:
 
 - Dreamina / 即梦 queue can be long
 - VolcEngine Seedance API is task-based
+- HappyHorse / fal uses queue-style API for long-running video generation
 - chat turns should not block on long video jobs
 - videos are costlier, so one candidate at a time is safer
 
@@ -347,10 +348,12 @@ Video generation is async-first.
 ```bash
 plotloom video submit --episode ep001 --clip clip-01 --adapter mock
 plotloom video submit --episode ep001 --clip clip-01 --adapter volcengine-seedance
+plotloom video submit --episode ep001 --clip clip-01 --adapter happyhorse-fal --mode reference-to-video
 plotloom video submit --episode ep001 --clip clip-01 --adapter dreamina
 
 plotloom video poll --episode ep001 --clip clip-01
 plotloom video poll --task-id cgt-... --adapter volcengine-seedance --download-dir PATH
+plotloom video poll --task-id req_... --adapter happyhorse-fal --download-dir PATH
 plotloom video list --adapter volcengine-seedance --status queued
 plotloom video cancel --task-id cgt-... --adapter volcengine-seedance
 ```
@@ -367,8 +370,30 @@ Adapter priority:
 
 1. `mock`: local fake video for E2E and tests.
 2. `volcengine-seedance`: preferred real async API candidate after key validation.
-3. `dreamina`: useful fallback / comparison path, but queue and login state are less predictable.
-4. `videoclaw`: optional legacy execution adapter later.
+3. `happyhorse-fal`: high-value optional real adapter; official fal API partner path, supports T2V/I2V/Ref2V/Edit with native synchronized audio.
+4. `dreamina`: useful fallback / comparison path, but queue and login state are less predictable.
+5. `videoclaw`: optional legacy execution adapter later.
+
+HappyHorse mode mapping:
+
+```text
+text-to-video      -> no image/reference asset; prompt-only clip
+image-to-video     -> one selected image/reference still as first frame
+reference-to-video -> 1-9 character/scene/style references; prompt uses character1..character9
+video-edit         -> reroll/edit existing clip; optional 0-5 reference images; audio_setting=auto|origin
+```
+
+HappyHorse constraints to validate before submit:
+
+- provider/auth: `FAL_KEY`; use `fal.ai`, not browser wrappers.
+- endpoint family: `alibaba/happy-horse/{text-to-video|image-to-video|reference-to-video|video-edit}`.
+- duration: 3-15 seconds.
+- resolution: `720p` or `1080p`.
+- aspect ratio: `16:9`, `9:16`, `1:1`, `4:3`, `3:4`.
+- prompt: max 2500 chars; pass extracted prompt text, not full Markdown.
+- local images/videos must be uploaded first because the API expects URLs.
+
+Research note: `docs/research/2026-04-30-happyhorse-adapter-spike.md`.
 
 Task receipt example:
 
@@ -502,6 +527,8 @@ class VideoAdapter:
 
 `volcengine-seedance` returns a task id and later a video URL.
 
+`happyhorse-fal` uses fal queue-style APIs. It supports four modes: `text-to-video`, `image-to-video`, `reference-to-video`, and `video-edit`. It should return a fal request id at submit time, then download `result.video.url` into the clip candidate directory when polling completes. Local image/video inputs must be uploaded to fal first and passed as URLs.
+
 `dreamina` returns a submit id and later downloads via CLI.
 
 ## 8. Implementation Shape
@@ -523,6 +550,7 @@ plotloom/
     image_codex.py
     video_mock.py
     video_volcengine.py
+    video_happyhorse_fal.py
     video_dreamina.py
   commands/
     init.py
@@ -552,6 +580,7 @@ click>=8.1
 requests>=2.31
 tomli-w>=1.0
 volcengine-python-sdk[ark]>=5.0.0  # optional extra
+fal-client>=0.7.0                 # optional extra for happyhorse-fal
 ```
 
 Keep existing deterministic scripts until CLI wrappers are stable; migrate later if useful.
@@ -617,7 +646,26 @@ Acceptance:
 - downloads candidate video
 - ffprobe passes
 
-### Phase 4: Dreamina adapter
+### Phase 4: HappyHorse / fal adapter
+
+Prerequisite: `FAL_KEY` and endpoint access validated.
+
+```text
+video submit --adapter happyhorse-fal --mode text-to-video
+video submit --adapter happyhorse-fal --mode image-to-video
+video submit --adapter happyhorse-fal --mode reference-to-video
+video poll --adapter happyhorse-fal
+```
+
+Acceptance:
+
+- returns fal request id
+- writes receipt
+- uploads local reference assets when needed
+- downloads `result.video.url` into `candidates/vNNN.mp4`
+- ffprobe confirms duration/resolution/audio facts
+
+### Phase 5: Dreamina adapter
 
 ```text
 video submit --adapter dreamina
@@ -630,7 +678,7 @@ Acceptance:
 - records submit id
 - downloads candidate when finished
 
-### Phase 5: prompt check/extract
+### Phase 6: prompt check/extract
 
 ```text
 prompt check
@@ -666,6 +714,7 @@ Subtitles/publishing can be future modules after first-episode production works.
 2. Should cover prompt be persisted as a file? Current lean-artifact rule says no; use temporary `--prompt-file` unless needed.
 3. Should `plotloom image generate --kind cast` generate 1 grid or 3 grids? Current default: one effective `character-grid.png`; reroll backs up old grid.
 4. Should VolcEngine become default video adapter if queue is good? Decide after key-based timing test.
+5. Should HappyHorse/fal become the preferred audio-native adapter for clips that need synchronized speech/sound? Decide after `FAL_KEY` probe and cost/timing comparison.
 
 ## 12. Final MVP Coverage Check
 
