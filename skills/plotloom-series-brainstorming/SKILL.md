@@ -1,16 +1,17 @@
 ---
-name: plotloom-series-bible
+name: plotloom-series-brainstorming
 description: >-
-  Creates or updates the Plotloom short-drama series bible, character context, and character asset briefs.
-  Use whenever the user starts a new Plotloom/短剧 idea, asks to create or continue a series repo, needs `series.md`
-  or `characters.md`, mentions a repeatable story engine, character bible, cast design, character-grid, or wants stable
-  world/tone/visual anchors before episode, prompt, video, selection, or stitching work.
+  Use when the user starts or revises a Plotloom/短剧 series idea, needs `series.md` or `characters.md`,
+  mentions character bible, cast design, repeatable story engine, character-grid, or wants stable world/tone/visual
+  anchors before episode, prompt, video, selection, or stitching work.
 ---
 
-# Plotloom Series Bible
+# Plotloom Series Brainstorming
 
 ## When to Use
 Use when the user has a short-drama idea but the current repo does not yet have stable series context, or when `series.md` / `characters.md` are missing, thin, or visually under-specified. Also use before image/video work when character identity, conflict engine, or home repo registry status is unclear.
+
+This skill is brainstorming-driven: align the series direction with the user before writing durable series files, unless the user explicitly asks for a fast Agent-led draft.
 
 ## Inputs
 - User idea, title, genre, tone, desired episode count, and constraints.
@@ -19,6 +20,7 @@ Use when the user has a short-drama idea but the current repo does not yet have 
 - Existing `series.md`, `characters.md`, character-grid images, or prior episode notes.
 
 ## Outputs
+- 2-3 candidate series directions when the core direction is not already locked.
 - `series.md`
 - `characters.md`
 - Baseline series repo directories.
@@ -35,11 +37,22 @@ Use when the user has a short-drama idea but the current repo does not yet have 
 1. Detect whether the current directory or a parent is already a Plotloom series repo by looking for `plotloom.toml`, `series.md`, `characters.md`, or `episodes/`.
 2. If no repo is active, inspect `~/plotloom.toml` and decide whether to continue an existing series or create a new repo. Ask only if multiple plausible repos exist.
 3. When creating a new repo, use `plotloom init <slug> --title <title>` for deterministic scaffolding only. Do not put story logic in the CLI.
-4. Develop enough long-form context so episode 1 is not a one-off skit: premise, audience/tone, recurring conflict engine, core cast, season arc, and first-three-episode runway.
-5. For each core character, define stable visual anchors and the required `assets/cast/<slug>/character-grid.png` brief: front/side/back, expression grid, wardrobe lock, props, palette, and do-not-change invariants.
-6. Stop before image generation, video generation, candidate selection, or stitching.
+4. If the premise, tone, protagonist identity, or repeatable conflict engine is not locked, present 2-3 candidate directions before writing files. Each option should include: one-sentence promise, repeatable engine, core cast shape, visual tone, and trade-off.
+5. Recommend one option and ask exactly one alignment question. Prefer a multiple-choice question such as "选 A/B/C，还是混合 A+C?"
+6. Ask at most one more blocking follow-up if a durable file would otherwise encode a major unknown. Do not run a long interview.
+7. If the user explicitly asks for a fast Agent-led draft, pick the strongest direction, state the assumption, and write the files.
+8. Develop enough long-form context so episode 1 is not a one-off skit: premise, audience/tone, recurring conflict engine, core cast, season arc, and first-three-episode runway.
+9. For each core character, define stable visual anchors and the required `assets/cast/<slug>/character-grid.png` brief: front/side/back, expression grid, wardrobe lock, props, palette, and do-not-change invariants.
+10. Stop before image generation, video generation, candidate selection, or stitching.
 
-## Series Bible Writing Rules
+## Brainstorming Rules
+- Offer concrete alternatives, not vague questions.
+- One message should not ask the user to solve more than one creative decision.
+- Lead with the recommended option and explain the trade-off briefly.
+- If the user chooses a direction, proceed to write or update `series.md` and `characters.md` without restarting the brainstorm.
+- Preserve existing user-approved facts when revising an existing repo.
+
+## Series Brainstorming Writing Rules
 - Make the conflict repeatable across episodes and not exhausted in ep001.
 - Define character desire, wound/contradiction, leverage/secret, role in the conflict engine, visual identity, and dialogue style.
 - Separate stable visual anchors from mutable episode styling.

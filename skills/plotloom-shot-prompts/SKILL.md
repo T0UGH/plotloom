@@ -53,7 +53,7 @@ Stop when video prompts are ready. Do not submit jobs, poll queues, copy selecte
 Use `plotloom-video-adapter` for fake or real model submission.
 
 ## Failure Modes
-- Missing series context: hand off to `plotloom-series-bible`.
+- Missing series context: hand off to `plotloom-series-brainstorming`.
 - Missing episode intent: create an episode card or ask for direction.
 - Model requires English: produce `video-prompts-en.md` from the same intent.
 - User asks for per-shot model calls: explain that Plotloom uses continuous prompt tasks, not one generation per micro-shot.

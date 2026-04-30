@@ -63,7 +63,7 @@ Expected: all concepts appear in docs.
 
 **Files:**
 - Create directories under `skills/`:
-  - `skills/plotloom-series-bible/`
+  - `skills/plotloom-series-brainstorming/`
   - `skills/plotloom-episode-card/`
   - `skills/plotloom-shot-prompts/`
   - `skills/plotloom-asset-selection/`
@@ -76,7 +76,7 @@ Expected: all concepts appear in docs.
 
 ```text
 skills/
-  plotloom-series-bible/templates/
+  plotloom-series-brainstorming/templates/
   plotloom-episode-card/templates/
   plotloom-shot-prompts/references/
   plotloom-shot-prompts/templates/
@@ -103,12 +103,12 @@ git commit -m "chore: add Plotloom skill pack skeleton"
 
 ---
 
-### Task 1.2: Write `plotloom-series-bible/SKILL.md`
+### Task 1.2: Write `plotloom-series-brainstorming/SKILL.md`
 
 **Objective:** Define how an agent turns an idea into series-level context without generating video.
 
 **Files:**
-- Create: `skills/plotloom-series-bible/SKILL.md`
+- Create: `skills/plotloom-series-brainstorming/SKILL.md`
 
 **Prompt Contract:**
 
@@ -134,20 +134,20 @@ This skill should instruct the agent to:
 
 ```markdown
 ---
-name: plotloom-series-bible
+name: plotloom-series-brainstorming
 description: >-
   Creates or updates a Plotloom short-drama series bible and core character context.
   Use when starting a new short drama, continuing from an idea, creating a series repo,
   or when `series.md` / `characters.md` are missing.
 ---
 
-# Plotloom Series Bible
+# Plotloom Series Brainstorming
 
 ## When to Use
 ## Inputs
 ## Outputs
 ## Workflow
-## Series Bible Writing Rules
+## Series Brainstorming Writing Rules
 ## Stop Conditions
 ## Next Skill Handoff
 ## Failure Modes
@@ -158,7 +158,7 @@ description: >-
 **Verification:**
 
 ```bash
-grep -n "When to Use\|Inputs\|Outputs\|Stop Conditions\|Next Skill" skills/plotloom-series-bible/SKILL.md
+grep -n "When to Use\|Inputs\|Outputs\|Stop Conditions\|Next Skill" skills/plotloom-series-brainstorming/SKILL.md
 ```
 
 Expected: all sections present.
@@ -166,19 +166,19 @@ Expected: all sections present.
 **Commit:**
 
 ```bash
-git add skills/plotloom-series-bible/SKILL.md
-git commit -m "feat: add Plotloom series bible skill"
+git add skills/plotloom-series-brainstorming/SKILL.md
+git commit -m "feat: add Plotloom series brainstorming skill"
 ```
 
 ---
 
 ### Task 1.3: Write series templates
 
-**Objective:** Add human-readable Markdown templates used by the series bible skill.
+**Objective:** Add human-readable Markdown templates used by the series brainstorming skill.
 
 **Files:**
-- Create: `skills/plotloom-series-bible/templates/series.md`
-- Create: `skills/plotloom-series-bible/templates/characters.md`
+- Create: `skills/plotloom-series-brainstorming/templates/series.md`
+- Create: `skills/plotloom-series-brainstorming/templates/characters.md`
 
 **Template Requirements:**
 
@@ -220,14 +220,14 @@ git commit -m "feat: add Plotloom series bible skill"
 **Verification:**
 
 ```bash
-grep -n "Series Engine\|First Three Episodes" skills/plotloom-series-bible/templates/series.md
-grep -n "Required Asset\|character-grid.png" skills/plotloom-series-bible/templates/characters.md
+grep -n "Series Engine\|First Three Episodes" skills/plotloom-series-brainstorming/templates/series.md
+grep -n "Required Asset\|character-grid.png" skills/plotloom-series-brainstorming/templates/characters.md
 ```
 
 **Commit:**
 
 ```bash
-git add skills/plotloom-series-bible/templates
+git add skills/plotloom-series-brainstorming/templates
 git commit -m "feat: add Plotloom series bible templates"
 ```
 

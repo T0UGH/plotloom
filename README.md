@@ -150,7 +150,7 @@ Plotloom 的推荐用法是让 Agent 按阶段调用 skills，而不是一次性
 推荐顺序：
 
 ```text
-1. plotloom-series-bible      -> 稳定系列设定、角色关系和视觉锚点
+1. plotloom-series-brainstorming      -> 先 brainstorm 对齐系列方向，再稳定角色和视觉锚点
 2. plotloom-episode-card      -> 定义单集 hook、反转、cliffhanger
 3. plotloom-shot-prompts      -> 生成连续视频 prompt
 4. plotloom-video-adapter     -> 提交 mock / Dreamina / Seedance 候选视频
@@ -162,7 +162,7 @@ Plotloom 的推荐用法是让 Agent 按阶段调用 skills，而不是一次性
 
 | Skill | 说明 |
 |-------|------|
-| `plotloom-series-bible` | 创建或更新 `series.md`、`characters.md` 和角色素材 brief |
+| `plotloom-series-brainstorming` | 用启发式讨论收敛系列方向，并创建或更新 `series.md`、`characters.md` |
 | `plotloom-episode-card` | 为单集生成轻量 episode intent card |
 | `plotloom-shot-prompts` | 生成适合 Seedance/Dreamina 的连续视频 prompt |
 | `plotloom-video-adapter` | 提交或轮询 mock、Dreamina、VolcEngine 视频任务 |
