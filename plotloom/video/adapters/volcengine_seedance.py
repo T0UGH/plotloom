@@ -167,6 +167,11 @@ def _video_url(data: dict[str, Any]) -> str | None:
         video = output.get("video")
         if isinstance(video, dict) and video.get("url"):
             return str(video["url"])
+    content = data.get("content")
+    if isinstance(content, dict):
+        for key in ("video_url", "url"):
+            if content.get(key):
+                return str(content[key])
     return None
 
 

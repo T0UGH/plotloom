@@ -17,7 +17,7 @@ class FakeHTTP:
         return type(
             "Resp",
             (),
-            {"json": lambda self: {"id": "cgt_123", "status": "succeeded", "output": {"video_url": "https://example.com/out.mp4"}}, "raise_for_status": lambda self: None},
+            {"json": lambda self: {"id": "cgt_123", "status": "succeeded", "content": {"video_url": "https://example.com/out.mp4"}}, "raise_for_status": lambda self: None},
         )()
 
 
