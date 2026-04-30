@@ -362,16 +362,20 @@ MVP required:
 
 ```bash
 plotloom video submit --adapter mock
+plotloom video submit --adapter dreamina-cli
+plotloom video submit --adapter happyhorse-fal
 plotloom video submit --adapter volcengine-seedance
 plotloom video poll
 ```
 
+This phase intentionally integrates three real backends in parallel so Plotloom can compare actual short-drama output instead of choosing a winner upfront. Detailed integration design: `docs/design/2026-04-30-video-adapter-three-provider-integration.md`.
+
 Adapter priority:
 
 1. `mock`: local fake video for E2E and tests.
-2. `volcengine-seedance`: preferred real async API candidate after key validation.
-3. `happyhorse-fal`: high-value optional real adapter; official fal API partner path, supports T2V/I2V/Ref2V/Edit with native synchronized audio.
-4. `dreamina`: useful fallback / comparison path, but queue and login state are less predictable.
+2. `dreamina-cli`: immediate baseline because local CLI/login path is already known; useful to start comparing output quickly.
+3. `happyhorse-fal`: high-value audio-native API adapter; official fal API partner path, supports T2V/I2V/Ref2V/Edit with native synchronized audio.
+4. `volcengine-seedance`: best API-shaped first-party async candidate; likely long-term native adapter if key/queue/quality validate.
 5. `videoclaw`: optional legacy execution adapter later.
 
 HappyHorse mode mapping:
@@ -628,27 +632,30 @@ Acceptance:
 - cover candidates numbered correctly
 - selected copy and backup work
 
-### Phase 3: VolcEngine Seedance video adapter
+### Phase 3: three real video adapters comparison
 
-Prerequisite: `ARK_API_KEY` and model access validated.
+This phase integrates all three real backends behind the same submit/poll/receipt contract. Do not choose a single default before the comparison run.
+
+#### Phase 3A: Dreamina CLI baseline
+
+Prerequisite: host is already authenticated and `dreamina user_credit` passes with `vip_level: maestro`.
 
 ```text
-video submit --adapter volcengine-seedance
-video poll
-video cancel
+video submit --adapter dreamina-cli --mode text-to-video
+video submit --adapter dreamina-cli --mode image-to-video
+video poll --adapter dreamina-cli
 ```
 
 Acceptance:
 
-- returns task id
-- writes receipt
-- observes queued/running/succeeded or clear failure
-- downloads candidate video
+- records `submit_id`
+- external query loop works through `query_result`
+- downloads candidate to `candidates/vNNN.dreamina-cli.mp4`
 - ffprobe passes
 
-### Phase 4: HappyHorse / fal adapter
+#### Phase 3B: HappyHorse / fal adapter
 
-Prerequisite: `FAL_KEY` and endpoint access validated.
+Prerequisite: `FAL_KEY`, funded fal account, and `fal-client` available.
 
 ```text
 video submit --adapter happyhorse-fal --mode text-to-video
@@ -662,23 +669,36 @@ Acceptance:
 - returns fal request id
 - writes receipt
 - uploads local reference assets when needed
-- downloads `result.video.url` into `candidates/vNNN.mp4`
+- downloads `result.video.url` into `candidates/vNNN.happyhorse-fal.mp4`
 - ffprobe confirms duration/resolution/audio facts
 
-### Phase 5: Dreamina adapter
+#### Phase 3C: VolcEngine Seedance adapter
+
+Prerequisite: `ARK_API_KEY` and model access validated.
 
 ```text
-video submit --adapter dreamina
-video poll --adapter dreamina
+video submit --adapter volcengine-seedance
+video poll --adapter volcengine-seedance
+video cancel --adapter volcengine-seedance
 ```
 
 Acceptance:
 
-- wraps Dreamina CLI without reading credentials
-- records submit id
-- downloads candidate when finished
+- returns task id
+- writes receipt
+- observes queued/running/succeeded or clear failure
+- downloads candidate video to `candidates/vNNN.volcengine-seedance.mp4`
+- ffprobe passes
 
-### Phase 6: prompt check/extract
+#### Phase 3D: Same-prompt comparison report
+
+Run the same 720p vertical clip prompt through all three adapters and record:
+
+```text
+submit time / queued time / running time / total time / cost / has_audio / visual quality / character consistency / failure mode
+```
+
+### Phase 4: prompt check/extract
 
 ```text
 prompt check
