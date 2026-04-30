@@ -5,7 +5,10 @@ import re
 from dataclasses import asdict, dataclass
 
 CLIP_HEADING = re.compile(r"^##\s+(?P<clip>clip(?:\s+|-)\d+)\s*$", re.IGNORECASE | re.MULTILINE)
-PROMPT_MARKER = re.compile(r"^\s*(?:[-*]\s*)?Prompt(?:\s+string)?:\s*(?P<inline>.*)$", re.IGNORECASE | re.MULTILINE)
+PROMPT_MARKER = re.compile(
+    r"^\s*(?:[-*]\s*)?Prompt(?:\s+string)?(?:\s+for\s+`[^`]+`)?\s*:\s*(?P<inline>.*)$",
+    re.IGNORECASE | re.MULTILINE,
+)
 STOP_MARKER = re.compile(
     r"^\s*(?:[-*]\s*)?(?:Reference images|Duration hint|Ratio|Ending frame(?:\s*/\s*handoff point)?):",
     re.IGNORECASE | re.MULTILINE,
@@ -20,8 +23,14 @@ class CompiledPrompt:
     prompt_chars: int
     warnings: list[str]
 
+    @property
+    def sha256(self) -> str:
+        return self.prompt_sha256
+
     def to_dict(self) -> dict[str, object]:
-        return asdict(self)
+        data = asdict(self)
+        data["sha256"] = self.prompt_sha256
+        return data
 
 
 def _slug_clip(value: str) -> str:

@@ -109,6 +109,7 @@ def compile_command(
         "mode": mode,
         "prompt_file": str(path),
         "prompt_text": compiled.prompt_text,
+        "sha256": compiled.sha256,
         "prompt_sha256": compiled.prompt_sha256,
         "prompt_chars": compiled.prompt_chars,
         "warnings": compiled.warnings,
@@ -144,6 +145,7 @@ def check_command(ctx: click.Context, episode: str, clip: str | None, adapter: s
             continue
         checks[clip_name] = {
             "ok": True,
+            "sha256": compiled.sha256,
             "prompt_sha256": compiled.prompt_sha256,
             "prompt_chars": compiled.prompt_chars,
             "warnings": compiled.warnings,

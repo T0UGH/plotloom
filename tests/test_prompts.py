@@ -58,6 +58,22 @@ def test_extract_supports_inline_prompt_marker():
     assert extract_clip_prompt(text, "Clip 1") == "Keep the story text."
 
 
+def test_extract_supports_cli_prompt_marker_with_code_span():
+    text = """
+## clip-01
+- Prompt string for `--prompt`:
+  ```text
+  Keep this prompt from the skill template.
+  ```
+- Ending frame / handoff point: stop here.
+"""
+
+    prompt = extract_clip_prompt(text, "clip-01")
+
+    assert "Keep this prompt from the skill template." in prompt
+    assert "Ending frame" not in prompt
+
+
 def test_compile_aliyun_reference_prompt_preserves_story_text():
     compiled = compile_prompt(PROMPTS, "clip-01", adapter="aliyun-bailian-wan", mode="reference-to-video")
 
@@ -65,6 +81,8 @@ def test_compile_aliyun_reference_prompt_preserves_story_text():
     assert "rainy lobby" in compiled.prompt_text
     assert compiled.prompt_chars == len(compiled.prompt_text)
     assert compiled.prompt_sha256 == hashlib.sha256(compiled.prompt_text.encode("utf-8")).hexdigest()
+    assert compiled.sha256 == compiled.prompt_sha256
+    assert compiled.to_dict()["sha256"] == compiled.prompt_sha256
     assert compiled.warnings == []
 
 
@@ -148,6 +166,7 @@ def test_prompt_compile_command_json(tmp_path):
     assert payload["command"] == "prompt.compile"
     assert payload["adapter"] == "aliyun-bailian-wan"
     assert payload["prompt_chars"] == len(payload["prompt_text"])
+    assert payload["sha256"] == payload["prompt_sha256"]
     assert "rainy lobby" in payload["prompt_text"]
 
 
