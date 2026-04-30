@@ -1,12 +1,13 @@
 {
-  "skill_name": "plotloom-series-bible",
+  "skill_name": "plotloom-series-brainstorming",
   "evals": [
     {
       "id": 1,
       "prompt": "我有个短剧想法：外卖员其实是失踪千金，帮我开一个 Plotloom 系列 repo，并先写系列设定和角色。",
-      "expected_output": "Creates/updates series.md and characters.md, mentions repo detection/registry, stops before media generation.",
+      "expected_output": "Offers 2-3 series directions or states the fast-draft assumption before creating/updating series.md and characters.md; stops before media generation.",
       "files": [],
       "expectations": [
+        "Includes a concrete brainstorm choice or explicit Agent-led assumption",
         "Includes repeatable series engine",
         "Defines core cast with visual anchors and character-grid asset paths",
         "Does not generate video or image candidates"
@@ -15,9 +16,10 @@
     {
       "id": 2,
       "prompt": "这个 series.md 太像一集小品了，帮我补成能拍十集的短剧引擎。",
-      "expected_output": "Improves repeatable conflict engine and first-three-episode runway without creating unrelated artifacts.",
+      "expected_output": "Offers focused engine alternatives, recommends one, then improves repeatable conflict engine and first-three-episode runway after alignment.",
       "files": [],
       "expectations": [
+        "Presents concrete engine options or a clear recommended rewrite",
         "Explains why the engine can sustain episodes",
         "Preserves existing context",
         "No hidden runtime state"

@@ -26,7 +26,7 @@ Use when `series.md` and `characters.md` exist but the next episode needs a comp
 
 ## Workflow
 1. Read `series.md` and `characters.md`.
-2. If series/character context is missing, hand off to `plotloom-series-bible` rather than inventing it.
+2. If series/character context is missing, hand off to `plotloom-series-brainstorming` rather than inventing it.
 3. Create or update only `episodes/epXXX/episode-card.md` when story intent needs anchoring.
 4. Keep the card lean: runtime target, opening hook, emotional hook, main conflict, escalation, reversal, ending hook, required characters/assets, locations, and continuity constraints.
 5. Hand off to `plotloom-shot-prompts`.
@@ -45,6 +45,6 @@ Stop after the episode card is clear. Do not call image/video tools, write video
 Use `plotloom-shot-prompts` to turn this card into continuous video prompt tasks.
 
 ## Failure Modes
-- Missing `series.md` or `characters.md`: hand off to `plotloom-series-bible` first.
+- Missing `series.md` or `characters.md`: hand off to `plotloom-series-brainstorming` first.
 - Episode already has a good card: summarize it and proceed to prompt generation.
 - User asks for full script/storyboard: confirm scope; do not create mandatory heavyweight artifacts by default.

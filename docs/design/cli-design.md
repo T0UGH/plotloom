@@ -69,7 +69,7 @@ The CLI should support those skills with stable commands.
 Example:
 
 ```text
-plotloom-series-bible skill
+plotloom-series-brainstorming skill
   -> needs repo structure
   -> calls plotloom init / validate
 

@@ -104,7 +104,7 @@ plotloom/
     decisions/
 
   skills/
-    plotloom-series-bible/
+    plotloom-series-brainstorming/
       SKILL.md
       templates/
         series.md
@@ -228,7 +228,7 @@ video-prompts-en.md          # 英文模型执行版
 
 ```text
 skills/
-  plotloom-series-bible/
+  plotloom-series-brainstorming/
     SKILL.md
     templates/
       series.md
