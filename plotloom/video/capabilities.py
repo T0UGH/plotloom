@@ -33,7 +33,7 @@ def capabilities_for(adapter: str) -> VideoAdapterCapabilities:
             max_duration=15,
             ratios=ALIYUN_BAILIAN_T2V_RATIOS,
             resolutions=frozenset({"720p", "1080p"}),
-            max_prompt_chars=1500,
+            max_prompt_chars=5000,
             supports_native_audio=True,
             supports_seed=True,
             supports_first_frame=False,

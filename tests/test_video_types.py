@@ -64,7 +64,7 @@ def test_aliyun_bailian_rejects_too_long_prompt():
 def test_aliyun_bailian_uses_current_wan_t2v_constraints():
     req = make_request(
         adapter="aliyun-bailian-wan",
-        prompt_text="x" * 1501,
+        prompt_text="x" * 5000,
         ratio="3:4",
         resolution="1080p",
         duration=2,
@@ -74,7 +74,7 @@ def test_aliyun_bailian_uses_current_wan_t2v_constraints():
 
     result = validate_request(req, capabilities_for("aliyun-bailian-wan"))
 
-    assert [issue.code for issue in result.issues] == ["PROMPT_TOO_LONG"]
+    assert result.ok
 
 
 def test_capability_sets_cannot_poison_future_results():
