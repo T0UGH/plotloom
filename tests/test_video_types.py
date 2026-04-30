@@ -61,6 +61,31 @@ def test_aliyun_bailian_rejects_too_long_prompt():
     assert result.issues[0].code == "PROMPT_TOO_LONG"
 
 
+def test_aliyun_bailian_uses_current_wan_t2v_constraints():
+    req = make_request(
+        adapter="aliyun-bailian-wan",
+        prompt_text="x" * 1501,
+        ratio="3:4",
+        resolution="1080p",
+        duration=2,
+        seed=123,
+        audio_intent="require_native",
+    )
+
+    result = validate_request(req, capabilities_for("aliyun-bailian-wan"))
+
+    assert [issue.code for issue in result.issues] == ["PROMPT_TOO_LONG"]
+
+
+def test_capability_sets_cannot_poison_future_results():
+    caps = capabilities_for("dreamina-cli")
+
+    with pytest.raises(AttributeError):
+        caps.ratios.add("bad:ratio")
+
+    assert "bad:ratio" not in capabilities_for("dreamina-cli").ratios
+
+
 def test_dreamina_rejects_unsupported_resolution_and_short_duration():
     req = make_request(resolution="1080p", duration=3)
 

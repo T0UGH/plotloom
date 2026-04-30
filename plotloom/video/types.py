@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
-from typing import Literal
+from typing import FrozenSet, Literal
 
 
 class VideoMode(StrEnum):
@@ -41,11 +41,11 @@ class PlotloomVideoRequest:
 @dataclass(frozen=True)
 class VideoAdapterCapabilities:
     adapter: str
-    modes: set[VideoMode]
+    modes: FrozenSet[VideoMode]
     min_duration: int
     max_duration: int
-    ratios: set[str]
-    resolutions: set[str]
+    ratios: FrozenSet[str]
+    resolutions: FrozenSet[str]
     max_prompt_chars: int | None
     supports_native_audio: bool
     supports_seed: bool
@@ -53,7 +53,7 @@ class VideoAdapterCapabilities:
     supports_reference_images: bool
     supports_reference_videos: bool
     supports_video_edit: bool
-    extra_durations: set[int] = field(default_factory=set)
+    extra_durations: FrozenSet[int] = field(default_factory=frozenset)
 
 
 @dataclass(frozen=True)

@@ -3,19 +3,20 @@ from __future__ import annotations
 from plotloom.video.types import PlotloomVideoRequest, ValidationIssue, ValidationResult, VideoAdapterCapabilities, VideoMode
 
 
-DREAMINA_RATIOS = {"1:1", "3:4", "16:9", "4:3", "9:16", "21:9"}
-VOLCENGINE_RATIOS = DREAMINA_RATIOS | {"adaptive"}
+DREAMINA_RATIOS = frozenset({"1:1", "3:4", "16:9", "4:3", "9:16", "21:9"})
+ALIYUN_BAILIAN_T2V_RATIOS = frozenset({"1:1", "3:4", "16:9", "4:3", "9:16"})
+VOLCENGINE_RATIOS = DREAMINA_RATIOS | frozenset({"adaptive"})
 
 
 def capabilities_for(adapter: str) -> VideoAdapterCapabilities:
     if adapter == "dreamina-cli":
         return VideoAdapterCapabilities(
             adapter="dreamina-cli",
-            modes={VideoMode.TEXT_TO_VIDEO, VideoMode.IMAGE_TO_VIDEO},
+            modes=frozenset({VideoMode.TEXT_TO_VIDEO, VideoMode.IMAGE_TO_VIDEO}),
             min_duration=4,
             max_duration=15,
             ratios=DREAMINA_RATIOS,
-            resolutions={"720p"},
+            resolutions=frozenset({"720p"}),
             max_prompt_chars=None,
             supports_native_audio=False,
             supports_seed=False,
@@ -27,14 +28,14 @@ def capabilities_for(adapter: str) -> VideoAdapterCapabilities:
     if adapter == "aliyun-bailian-wan":
         return VideoAdapterCapabilities(
             adapter="aliyun-bailian-wan",
-            modes={VideoMode.TEXT_TO_VIDEO},
-            min_duration=5,
-            max_duration=5,
-            ratios={"9:16", "16:9"},
-            resolutions={"720p"},
-            max_prompt_chars=5000,
-            supports_native_audio=False,
-            supports_seed=False,
+            modes=frozenset({VideoMode.TEXT_TO_VIDEO}),
+            min_duration=2,
+            max_duration=15,
+            ratios=ALIYUN_BAILIAN_T2V_RATIOS,
+            resolutions=frozenset({"720p", "1080p"}),
+            max_prompt_chars=1500,
+            supports_native_audio=True,
+            supports_seed=True,
             supports_first_frame=False,
             supports_reference_images=False,
             supports_reference_videos=False,
@@ -43,11 +44,11 @@ def capabilities_for(adapter: str) -> VideoAdapterCapabilities:
     if adapter == "volcengine-seedance":
         return VideoAdapterCapabilities(
             adapter="volcengine-seedance",
-            modes={VideoMode.TEXT_TO_VIDEO, VideoMode.IMAGE_TO_VIDEO, VideoMode.REFERENCE_TO_VIDEO},
+            modes=frozenset({VideoMode.TEXT_TO_VIDEO, VideoMode.IMAGE_TO_VIDEO, VideoMode.REFERENCE_TO_VIDEO}),
             min_duration=4,
             max_duration=15,
             ratios=VOLCENGINE_RATIOS,
-            resolutions={"720p"},
+            resolutions=frozenset({"720p"}),
             max_prompt_chars=None,
             supports_native_audio=True,
             supports_seed=False,
@@ -55,7 +56,7 @@ def capabilities_for(adapter: str) -> VideoAdapterCapabilities:
             supports_reference_images=True,
             supports_reference_videos=False,
             supports_video_edit=False,
-            extra_durations={-1},
+            extra_durations=frozenset({-1}),
         )
     raise ValueError(f"unknown video adapter: {adapter}")
 
