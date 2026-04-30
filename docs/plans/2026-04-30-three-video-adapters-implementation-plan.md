@@ -2,11 +2,13 @@
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
 
-**Goal:** Build Plotloom's first real async video adapter layer for `dreamina-cli`, `happyhorse-fal`, and `volcengine-seedance`, including provider-specific prompt/reference compilation, capability validation, task receipts, polling, downloads, and same-prompt comparison support.
+> **Provider pivot on 2026-04-30:** Do not implement `happyhorse-fal` / fal.ai in this plan. The current provider set is `dreamina-cli`, `aliyun-bailian-wan`, and `volcengine-seedance`. Use `docs/plans/2026-04-30-plotloom-cli-implementation-plan.md` and `adapters/aliyun-bailian-wan.md` as the source of truth for the Bailian task before executing adapter work.
+
+**Goal:** Build Plotloom's first real async video adapter layer for `dreamina-cli`, `aliyun-bailian-wan`, and `volcengine-seedance`, including provider-specific prompt/reference compilation, capability validation, task receipts, polling, downloads, and same-prompt comparison support.
 
 **Architecture:** Keep Plotloom repo-first and runtime-light. Add a small Python package/CLI that compiles a normalized `PlotloomVideoRequest` into provider-native requests through adapter `capabilities()`, `validate_request()`, and `compile_native_request()`. Persist only visible TOML receipts and downloaded media under the series repo; no daemon, hidden DB, dashboard, or workflow runtime.
 
-**Tech Stack:** Python 3.11+, argparse or click, stdlib `tomllib` + `tomli-w`, `requests`, optional `fal-client`, optional `volcengine-python-sdk[ark]`, external `dreamina` CLI, ffprobe/ffmpeg.
+**Tech Stack:** Python 3.11+, argparse or click, stdlib `tomllib` + `tomli-w`, `requests`, optional `dashscope`, optional `volcengine-python-sdk[ark]`, external `dreamina` CLI, ffprobe/ffmpeg.
 
 ---
 
@@ -18,11 +20,11 @@ Read these before implementing:
 - CLI design: `docs/design/cli-design.md`
 - Adapter notes:
   - `adapters/dreamina.md`
-  - `adapters/happyhorse-fal.md`
+  - `adapters/aliyun-bailian-wan.md`
   - `adapters/volcengine-seedance.md`
 - Downloaded provider references:
   - `docs/references/video-adapters/2026-04-30/dreamina-cli/`
-  - `docs/references/video-adapters/2026-04-30/fal-happyhorse/`
+  - Aliyun Bailian Wan official docs linked from `adapters/aliyun-bailian-wan.md`
   - `docs/references/video-adapters/2026-04-30/volcengine-seedance/`
 - Existing deterministic scripts:
   - `scripts/init_series.py`
