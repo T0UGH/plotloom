@@ -139,5 +139,8 @@ def main(ctx: click.Context, repo: str | None, config_path: str | None, as_json:
 
 
 from plotloom.commands.config import config_group  # noqa: E402
+from plotloom.commands.repo import init_command, validate_command  # noqa: E402
 
 main.add_command(config_group)
+main.add_command(init_command)
+main.add_command(validate_command)
