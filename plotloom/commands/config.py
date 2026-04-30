@@ -8,10 +8,10 @@ import click
 import tomli_w
 
 from plotloom.config import DEFAULT_TEMPLATE, load_config, permission_warning, resolve_config_path, write_default_config
-from plotloom.errors import ConfigError
 from plotloom.output import emit
 
 KNOWN_ADAPTERS = ("codex-app-server", "dreamina-cli", "happyhorse-fal", "volcengine-seedance")
+ADAPTER_CHOICES = (*KNOWN_ADAPTERS, "all")
 
 
 @click.group(name="config")
@@ -77,10 +77,15 @@ def _check_adapter(cfg: Any, adapter: str) -> dict[str, dict[str, str]]:
             "ark_api_key": _secret_check(cfg.value_source("adapters.volcengine-seedance", "ark_api_key")),
             "volcenginesdkarkruntime": _dependency_check("volcenginesdkarkruntime"),
         }
-    raise ConfigError(
-        f"Unknown adapter: {adapter}",
-        next_step=f"Use one of: {', '.join((*KNOWN_ADAPTERS, 'all'))}.",
-    )
+    raise ValueError(adapter)
+
+
+def _unknown_adapter_warnings(cfg: Any) -> list[str]:
+    adapters = cfg.data.get("adapters", {})
+    if not isinstance(adapters, dict):
+        return []
+    unknown = sorted(name for name in adapters if name not in KNOWN_ADAPTERS)
+    return [f"unknown adapter section: {name}" for name in unknown]
 
 
 def _has_failure(checks: dict[str, Any]) -> bool:
@@ -94,11 +99,13 @@ def _has_failure(checks: dict[str, Any]) -> bool:
 
 
 @config_group.command("doctor")
-@click.option("--adapter", default="all")
+@click.option("--adapter", type=click.Choice(ADAPTER_CHOICES), default="all")
 @click.pass_context
 def config_doctor(ctx: click.Context, adapter: str) -> None:
     cfg = load_config(ctx.obj.get("config_path"))
     warning = permission_warning(cfg.path)
+    warnings = [warning] if warning else []
+    warnings.extend(_unknown_adapter_warnings(cfg))
     if adapter == "all":
         checks = {
             "permission": {"status": "warning" if warning else "ok"},
@@ -113,7 +120,7 @@ def config_doctor(ctx: click.Context, adapter: str) -> None:
         "path": str(cfg.path),
         "adapter": adapter,
         "checks": checks,
-        "warnings": [warning] if warning else [],
+        "warnings": warnings,
     }
     emit(
         {**data, "message": "config ok" if data["ok"] else "config check failed"},

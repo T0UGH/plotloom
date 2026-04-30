@@ -91,3 +91,34 @@ def test_config_doctor_happyhorse_missing_key_reports_status_without_secret(tmp_
     assert payload["checks"]["fal_key"]["status"] == "absent"
     assert "from-file" not in result.output
     assert "keep-me" not in result.output
+
+
+def test_config_doctor_warns_for_unknown_adapter_sections(tmp_path, monkeypatch):
+    cfg = tmp_path / ".env.toml"
+    cfg.write_text(
+        '[adapters.codex-app-server]\ncodex_binary = "python3"\n\n[adapters.unknown-adapter]\napi_key = "hidden"\n',
+        encoding="utf-8",
+    )
+    cfg.chmod(0o600)
+    monkeypatch.delenv("CODEX_BINARY", raising=False)
+
+    result = CliRunner().invoke(main, ["--json", "--config", str(cfg), "config", "doctor", "--adapter", "codex-app-server"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["ok"] is True
+    assert "unknown adapter section: unknown-adapter" in payload["warnings"]
+    assert "hidden" not in result.output
+
+
+def test_config_doctor_unknown_adapter_is_usage_error(tmp_path):
+    cfg = tmp_path / ".env.toml"
+    cfg.write_text("", encoding="utf-8")
+
+    result = CliRunner().invoke(main, ["--json", "--config", str(cfg), "config", "doctor", "--adapter", "nope"])
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["command"] == "config.doctor"
+    assert payload["error"]["code"] == "BAD_PARAMETER"
