@@ -143,7 +143,11 @@ episodes/ep001/videos/clip-01/tasks/mock-local.toml
 
 ## 通过 Skills 创作
 
-Plotloom 的推荐用法是让 Agent 按阶段调用 skills，而不是一次性完成所有步骤：
+Plotloom 的推荐用法是让 Agent 按阶段调用 skills，而不是一次性完成所有步骤。先用 series/episode/prompt skills 把创作意图收敛成稳定文件，再用 adapter/selection/delivery skills 生产、审查和交付素材。
+
+![Plotloom skills usage guide](docs/assets/plotloom-skills-guide.png)
+
+推荐顺序：
 
 ```text
 1. plotloom-series-bible      -> 稳定系列设定、角色关系和视觉锚点
