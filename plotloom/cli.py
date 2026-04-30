@@ -201,6 +201,7 @@ def main(ctx: click.Context, repo: str | None, config_path: str | None, as_json:
 
 from plotloom.commands.config import config_group  # noqa: E402
 from plotloom.commands.asset import asset_group  # noqa: E402
+from plotloom.commands.doctor import doctor_command  # noqa: E402
 from plotloom.commands.image import image_group  # noqa: E402
 from plotloom.commands.media import media_group  # noqa: E402
 from plotloom.commands.prompt import prompt_group  # noqa: E402
@@ -212,6 +213,7 @@ from plotloom.commands.video import video_group  # noqa: E402
 
 main.add_command(asset_group)
 main.add_command(config_group)
+main.add_command(doctor_command)
 main.add_command(image_group)
 main.add_command(init_command)
 main.add_command(media_group)
