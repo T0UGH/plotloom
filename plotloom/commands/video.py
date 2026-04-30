@@ -12,6 +12,7 @@ from plotloom.config import load_config
 from plotloom.repo import find_repo_from_cwd
 from plotloom.video.adapters.dreamina_cli import DreaminaCliAdapter
 from plotloom.video.adapters.mock import MockVideoAdapter
+from plotloom.video.adapters.volcengine_seedance import VolcEngineSeedanceAdapter
 from plotloom.video.receipts import Receipt, receipt_path, write_latest_pointer, write_receipt
 from plotloom.video.types import PlotloomVideoRequest, VideoMode
 
@@ -151,6 +152,13 @@ def _adapter(ctx: click.Context, name: str):
         return DreaminaCliAdapter(
             binary=cfg.adapter_value("dreamina-cli", "binary", "dreamina"),
             home=cfg.adapter_value("dreamina-cli", "home", "~"),
+        )
+    if name == "volcengine-seedance":
+        cfg = load_config(ctx.obj.get("config_path"))
+        return VolcEngineSeedanceAdapter(
+            ark_api_key=cfg.adapter_value("volcengine-seedance", "ark_api_key", ""),
+            base_url=cfg.adapter_value("volcengine-seedance", "base_url", "https://ark.cn-beijing.volces.com/api/v3"),
+            model=cfg.adapter_value("volcengine-seedance", "model", "doubao-seedance-2-0-260128"),
         )
     raise click.ClickException(f"unsupported video adapter for submit shell: {name}")
 

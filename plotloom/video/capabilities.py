@@ -53,7 +53,7 @@ def capabilities_for(adapter: str) -> VideoAdapterCapabilities:
             supports_seed=False,
             supports_first_frame=True,
             supports_reference_images=True,
-            supports_reference_videos=False,
+            supports_reference_videos=True,
             supports_video_edit=False,
             extra_durations=frozenset({-1}),
         )
