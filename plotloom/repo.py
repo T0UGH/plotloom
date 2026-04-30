@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import tomli_w
+
 from plotloom.toml_io import toml_str
 
 SAFE_SLUG = re.compile(r"^[a-z0-9][a-z0-9-]*$")
@@ -54,7 +56,7 @@ def copy_template(src: Path, dst: Path, *, slug: str, title: str) -> None:
             shutil.copy2(item, target)
 
 
-def append_registry(registry: Path, *, slug: str, title: str, path: Path) -> None:
+def append_registry(registry: Path, *, slug: str, title: str, path: Path, status: str = "active") -> None:
     if not validate_registry_append(registry, slug=slug, path=path):
         return
 
@@ -64,7 +66,7 @@ def append_registry(registry: Path, *, slug: str, title: str, path: Path) -> Non
             f"slug = {toml_str(slug)}",
             f"title = {toml_str(title)}",
             f"path = {toml_str(path)}",
-            'status = "active"',
+            f"status = {toml_str(status)}",
             "",
         ]
     )
@@ -90,6 +92,41 @@ def read_registry(registry: Path) -> list[dict[str, Any]]:
     if not isinstance(repos, list):
         raise RegistryError("registry repos must be an array")
     return [repo for repo in repos if isinstance(repo, dict)]
+
+
+def write_registry(registry: Path, repos: list[dict[str, Any]]) -> None:
+    try:
+        registry.parent.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        raise RegistryError(f"could not create registry parent: {registry.parent}") from error
+
+    serializable_repos: list[dict[str, Any]] = []
+    for repo in repos:
+        entry = dict(repo)
+        if "path" in entry:
+            entry["path"] = str(entry["path"])
+        serializable_repos.append(entry)
+    try:
+        registry.write_text(tomli_w.dumps({"repos": serializable_repos}), encoding="utf-8")
+    except OSError as error:
+        raise RegistryError(f"could not write registry: {registry}") from error
+
+
+def resolve_registry_repo(registry: Path, slug: str | None = None) -> Path:
+    repos = read_registry(registry)
+    if slug:
+        matches = [repo for repo in repos if repo.get("slug") == slug]
+    else:
+        matches = [repo for repo in repos if repo.get("status", "active") == "active"]
+    if not matches:
+        raise FileNotFoundError("no matching active repo" if slug is None else f"repo not found: {slug}")
+    if len(matches) > 1:
+        raise RuntimeError("multiple active repos")
+
+    path = Path(str(matches[0].get("path", ""))).expanduser()
+    if not path.exists():
+        raise FileNotFoundError(f"registered repo path is missing: {path}")
+    return path.resolve()
 
 
 def init_repo(target: Path, *, slug: str, title: str, registry: Path | None = None) -> Path:
