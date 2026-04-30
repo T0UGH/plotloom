@@ -161,3 +161,45 @@ def test_init_failure_keeps_existing_empty_target_empty(tmp_path, monkeypatch):
 
     assert target.exists()
     assert list(target.iterdir()) == []
+
+
+def test_init_rename_failure_does_not_write_registry(tmp_path, monkeypatch):
+    target = tmp_path / "repo"
+    registry = tmp_path / "plotloom.toml"
+
+    def fail_rename(self, other):
+        raise OSError("rename failed")
+
+    monkeypatch.setattr(repo_module.Path, "rename", fail_rename)
+
+    try:
+        repo_module.init_repo(target, slug="demo", title="Demo", registry=registry)
+    except OSError:
+        pass
+    else:
+        raise AssertionError("expected rename failure")
+
+    assert not target.exists()
+    assert not registry.exists()
+
+
+def test_init_rename_failure_restores_existing_empty_target(tmp_path, monkeypatch):
+    target = tmp_path / "repo"
+    target.mkdir()
+    registry = tmp_path / "plotloom.toml"
+
+    def fail_rename(self, other):
+        raise OSError("rename failed")
+
+    monkeypatch.setattr(repo_module.Path, "rename", fail_rename)
+
+    try:
+        repo_module.init_repo(target, slug="demo", title="Demo", registry=registry)
+    except OSError:
+        pass
+    else:
+        raise AssertionError("expected rename failure")
+
+    assert target.exists()
+    assert list(target.iterdir()) == []
+    assert not registry.exists()
