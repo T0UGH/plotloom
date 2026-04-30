@@ -75,6 +75,32 @@ def test_repos_resolve_fails_for_missing_path(tmp_path):
     assert "missing" in result.output.lower()
 
 
+def test_repos_resolve_fails_when_entry_omits_path(tmp_path):
+    config = tmp_path / ".env.toml"
+    registry = tmp_path / "plotloom.toml"
+    write_config(config, registry)
+    registry.write_text('[[repos]]\nslug = "demo"\ntitle = "Demo"\nstatus = "active"\n', encoding="utf-8")
+
+    result = CliRunner().invoke(main, ["--config", str(config), "repos", "resolve", "demo"])
+
+    assert result.exit_code == 1
+    assert "missing path" in result.output.lower()
+    assert "demo" in result.output
+
+
+def test_repos_resolve_fails_when_active_entry_has_blank_path(tmp_path):
+    config = tmp_path / ".env.toml"
+    registry = tmp_path / "plotloom.toml"
+    write_config(config, registry)
+    registry.write_text('[[repos]]\nslug = "demo"\ntitle = "Demo"\npath = "   "\nstatus = "active"\n', encoding="utf-8")
+
+    result = CliRunner().invoke(main, ["--config", str(config), "repos", "resolve"])
+
+    assert result.exit_code == 1
+    assert "missing path" in result.output.lower()
+    assert "demo" in result.output
+
+
 def test_repos_resolve_json_error_command_is_stable(tmp_path):
     config = tmp_path / ".env.toml"
     registry = tmp_path / "plotloom.toml"

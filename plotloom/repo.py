@@ -123,7 +123,12 @@ def resolve_registry_repo(registry: Path, slug: str | None = None) -> Path:
     if len(matches) > 1:
         raise RuntimeError("multiple active repos")
 
-    path = Path(str(matches[0].get("path", ""))).expanduser()
+    repo = matches[0]
+    path_value = repo.get("path")
+    if not isinstance(path_value, str) or not path_value.strip():
+        raise RegistryError(f"registry repo is missing path: {repo.get('slug', '<unknown>')}")
+
+    path = Path(path_value.strip()).expanduser()
     if not path.exists():
         raise FileNotFoundError(f"registered repo path is missing: {path}")
     return path.resolve()
