@@ -17,24 +17,18 @@ Plotloom 是一套面向短剧生产的 CLI + Skills 工具箱。它不把创作
 
 ## 概述
 
-Plotloom 面向短剧、广告短片、角色连续剧和系列化视频实验。它负责三件事：
+![Plotloom repo-first production flow](docs/assets/plotloom-flow.png)
 
-- 让 Agent 先沉淀稳定的系列上下文，而不是直接写一次性 prompt。
-- 把图片、视频、选择、拼接这些步骤固定到一致的目录结构。
-- 为真实模型接入提供 thin adapter，让本地 mock E2E 和付费 provider smoke 分开。
+Plotloom 不是把一个想法直接丢给模型、等待黑盒产出成片。它把短剧生产拆成一条可审查的 repo-first 链路：先沉淀系列设定、角色关系和视觉锚点，再围绕单集生成图片与视频候选；人或 Agent 逐步选择、重跑、修 prompt，最后只把确认过的素材拼成交付物。
 
-典型流程：
+这条链路里的每一步都有明确文件边界：
 
-```text
-短剧想法
-  -> series.md / characters.md
-  -> episode-card.md
-  -> video-prompts.md / video-prompts-en.md
-  -> image candidates / video candidates
-  -> accept / reroll / revise_prompt
-  -> selected.mp4
-  -> final.mp4
-```
+- `series.md` / `characters.md`：系列长期记忆和角色一致性锚点。
+- `episode-card.md`：单集 hook、反转、情绪目标和 cliffhanger。
+- `video-prompts.md` / `video-prompts-en.md`：可提交给 Dreamina、Seedance 等模型的 clip 任务。
+- `candidates/`：模型生成的多版本图片或视频素材。
+- `selected.*`：经过 review 后被接受的版本。
+- `final.mp4`：由 selected clips 拼接出的最终交付视频。
 
 ## 推荐客户端
 
