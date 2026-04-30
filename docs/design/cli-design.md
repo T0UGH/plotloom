@@ -370,6 +370,15 @@ plotloom video poll
 
 This phase intentionally integrates three real backends in parallel so Plotloom can compare actual short-drama output instead of choosing a winner upfront. Detailed integration design: `docs/design/2026-04-30-video-adapter-three-provider-integration.md`.
 
+Important boundary: the command surface is normalized, but provider parameters are not identical. `plotloom video submit` must compile a normalized `PlotloomVideoRequest` into each provider's native request through `adapter.capabilities()`, `adapter.validate_request()`, and `adapter.compile_native_request()`. Do not silently pass the same `duration/resolution/ratio/reference/audio` flags to all providers.
+
+Examples:
+
+- HappyHorse/fal supports 3s; Dreamina/VolcEngine Seedance 2.0 usually start at 4s.
+- HappyHorse/fal supports 1080p; Dreamina Seedance 2.0 family is usually 720p; VolcEngine support depends on model/version.
+- Dreamina `image2video` infers ratio from the input image; Plotloom must crop/validate the image rather than pretending `--ratio` applies.
+- HappyHorse Ref2V is an endpoint; VolcEngine references are `content[]` roles; Dreamina needs a CLI-specific command mapping.
+
 Adapter priority:
 
 1. `mock`: local fake video for E2E and tests.

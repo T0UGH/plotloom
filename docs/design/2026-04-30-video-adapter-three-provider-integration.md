@@ -30,9 +30,133 @@ prompt/reference assets -> submit -> visible task receipt -> poll/download -> ff
 - 成本；
 - 失败可诊断性。
 
+## 统一意图，不统一底层参数
+
+三家底层参数并不一致。Plotloom 只能统一 **生产意图** 和 **执行生命周期**，不能把 CLI/API 参数写成一套直接透传。
+
+正确分层：
+
+```text
+PlotloomVideoRequest  # normalized intent
+  prompt / refs / ratio / duration / resolution / audio_intent / seed / mode
+        ↓
+adapter.capabilities() + adapter.validate_request()
+        ↓
+ProviderNativeRequest # provider-specific params
+  dreamina CLI flags / fal arguments / VolcEngine content roles
+```
+
+也就是说：
+
+- `ratio=9:16` 是 Plotloom 的目标意图；到即梦 `image2video` 时可能变成“输入图必须预先裁成 9:16”，因为该命令不接收 ratio。
+- `duration=3` 对 HappyHorse/fal 合法，但对即梦/火山 Seedance 2.0 不合法，adapter 必须拒绝或提升到 4s。
+- `resolution=1080p` 对 HappyHorse/fal 合法，但对 Dreamina Seedance 2.0 family 通常不合法，对 VolcEngine fast 模型也可能不合法。
+- `reference-to-video` 对 HappyHorse 是显式 endpoint；对火山是 `content[] + role=reference_image`；对即梦当前只能映射到 `image2video` 或未来 `multimodal2video`，不能假装能力相同。
+
+## Capability model
+
+每个 adapter 需要声明能力，而不是让上层猜：
+
+```python
+@dataclass
+class VideoAdapterCapabilities:
+    adapter: str
+    modes: set[str]
+    min_duration: int
+    max_duration: int
+    ratios: set[str] | Literal["from_input_image", "adaptive"]
+    resolutions: set[str]
+    supports_native_audio: bool
+    supports_seed: bool
+    supports_first_frame: bool
+    supports_reference_images: bool
+    supports_video_edit: bool
+    local_file_strategy: Literal["cli_upload", "fal_upload", "url_or_base64"]
+```
+
+Adapter 必须实现：
+
+```python
+def capabilities() -> VideoAdapterCapabilities: ...
+def validate_request(req: PlotloomVideoRequest) -> ValidationResult: ...
+def compile_native_request(req: PlotloomVideoRequest) -> ProviderNativeRequest: ...
+```
+
+`validate_request` 的输出不要只是 true/false，应该能返回 clear downgrade / fix suggestion：
+
+```text
+OK
+ERROR: duration=3 unsupported by dreamina-cli; minimum is 4
+DOWNGRADE: requested 1080p but dreamina-cli seedance2.0fast only supports 720p
+REWRITE: image-to-video ratio is inferred from input image; crop first-frame to 9:16 before submit
+UNSUPPORTED: video-edit is not available on dreamina-cli adapter in current phase
+```
+
+## Capability matrix
+
+| Normalized field | dreamina-cli | happyhorse-fal | volcengine-seedance |
+|---|---|---|---|
+| T2V | `text2video` | `text-to-video` endpoint | text content task |
+| I2V | `image2video` | `image-to-video` endpoint | `image_url` role `first_frame` |
+| Ref2V | not first-class in current adapter; future `multimodal2video` | `reference-to-video`, 1-9 images | `image_url` role `reference_image`, 0-9 refs |
+| Video edit | not current phase | `video-edit` endpoint | not current phase unless API mode is validated |
+| Duration | 4-15s for Seedance 2.0 family | 3-15s | 4-15s for Seedance 2.0 / fast |
+| Resolution | Seedance 2.0 family: 720p | 720p / 1080p | model-dependent; start 720p; fast may not support 1080p |
+| Ratio | T2V flag; I2V inferred from image | `aspect_ratio` | `ratio`, plus `adaptive` |
+| Audio | model/CLI dependent | native synchronized audio | `generate_audio=true/false` |
+| Local file input | CLI handles upload | must `fal_client.upload_file()` first | URL/Base64/material ID; prefer URL for large files |
+| Status names | Queueing / Generating / Finish / Failed | IN_QUEUE / IN_PROGRESS / COMPLETED | queued / running / succeeded / failed / expired / cancelled |
+
+## Normalized request schema
+
+Plotloom request should stay small and provider-neutral:
+
+```toml
+mode = "image-to-video"          # text-to-video / image-to-video / reference-to-video / video-edit
+prompt_file = "episodes/ep001/video-prompts-en.md"
+ratio = "9:16"
+duration = 15
+resolution = "720p"
+audio_intent = "native_if_supported" # none / native_if_supported / require_native
+seed = 123456
+
+first_frame = "episodes/ep001/images/references/clip-01/selected.png"
+reference_images = ["assets/cast/hero/character-grid.png"]
+source_video = ""                 # only for video-edit
+```
+
+Provider adapter compiles it into native request and records the mapping in receipt:
+
+```toml
+[normalized]
+mode = "image-to-video"
+ratio = "9:16"
+duration = 15
+resolution = "720p"
+audio_intent = "native_if_supported"
+
+[native]
+adapter = "dreamina-cli"
+command = "dreamina image2video"
+model_version = "seedance2.0fast"
+ratio_handling = "inferred_from_input_image"
+resolution = "720p"
+duration = 15
+```
+
+## Parameter policy
+
+Default policy for this phase:
+
+1. **Do not silently degrade quality-sensitive parameters.** If user asks 1080p and adapter only supports 720p, return `DOWNGRADE_REQUIRED` unless caller passed `--allow-downgrade`.
+2. **Duration normalization can be explicit.** For smoke tests, `3s` can auto-become `4s` only when command says `--allow-normalize-duration`; otherwise fail clearly.
+3. **Ratio for I2V must be preprocessed, not pretended.** If adapter infers ratio from input image, Plotloom should validate/crop the reference image before submit or fail with instruction.
+4. **Audio intent is not binary.** `native_if_supported` means use native audio where available; `require_native` should reject adapters/modes that cannot guarantee native audio.
+5. **Mode mapping must be visible.** Receipt should record both normalized mode and provider native mode/endpoint/command.
+
 ## 统一命令面
 
-建议先不做复杂推断，显式 adapter + mode：
+统一命令面只表达 Plotloom 意图；adapter 负责校验和映射到底层参数。建议先不做复杂推断，显式 adapter + mode：
 
 ```bash
 plotloom video submit \
