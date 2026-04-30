@@ -119,3 +119,24 @@ def test_validate_json_error_command_is_stable(tmp_path):
     assert result.exit_code == 1
     payload = json.loads(result.output)
     assert payload["command"] == "repo.validate"
+
+
+def test_init_registry_parent_failure_does_not_create_partial_repo(tmp_path):
+    config = tmp_path / ".plotloom" / ".env.toml"
+    repos_root = tmp_path / "repos"
+    blocked_parent = tmp_path / "blocked"
+    blocked_parent.write_text("not a directory", encoding="utf-8")
+    config.parent.mkdir()
+    config.write_text(
+        f'[plotloom]\nrepos_root = "{repos_root}"\nregistry_path = "{blocked_parent / "plotloom.toml"}"\n',
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(main, ["--json", "--config", str(config), "init", "demo", "--title", "Demo"])
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["command"] == "repo.init"
+    assert "registry parent" in payload["error"]["message"]
+    assert "target repo is not empty" not in result.output
+    assert not (repos_root / "demo").exists()

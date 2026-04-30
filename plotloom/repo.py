@@ -20,6 +20,10 @@ class RepoValidation:
     missing: list[Path]
 
 
+class RegistryError(ValueError):
+    pass
+
+
 def project_root() -> Path:
     return Path(__file__).resolve().parents[1]
 
@@ -51,15 +55,8 @@ def copy_template(src: Path, dst: Path, *, slug: str, title: str) -> None:
 
 
 def append_registry(registry: Path, *, slug: str, title: str, path: Path) -> None:
-    registry.parent.mkdir(parents=True, exist_ok=True)
-    repos = read_registry(registry)
-    for repo in repos:
-        if repo.get("slug") != slug:
-            continue
-        existing_path = Path(str(repo.get("path", ""))).expanduser()
-        if existing_path == path:
-            return
-        raise ValueError(f"registry slug conflict: {slug}")
+    if not validate_registry_append(registry, slug=slug, path=path):
+        return
 
     entry = "\n".join(
         [
@@ -74,16 +71,24 @@ def append_registry(registry: Path, *, slug: str, title: str, path: Path) -> Non
     text = registry.read_text(encoding="utf-8") if registry.exists() else "# Plotloom home repo registry\n\n"
     if text and not text.endswith("\n"):
         text += "\n"
-    registry.write_text(text + entry, encoding="utf-8")
+    try:
+        registry.write_text(text + entry, encoding="utf-8")
+    except OSError as error:
+        raise RegistryError(f"could not write registry: {registry}") from error
 
 
 def read_registry(registry: Path) -> list[dict[str, Any]]:
     if not registry.exists():
         return []
-    data = tomllib.loads(registry.read_text(encoding="utf-8"))
+    try:
+        data = tomllib.loads(registry.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as error:
+        raise RegistryError(f"could not parse registry TOML: {registry}") from error
+    except OSError as error:
+        raise RegistryError(f"could not read registry: {registry}") from error
     repos = data.get("repos", [])
     if not isinstance(repos, list):
-        raise ValueError("registry repos must be an array")
+        raise RegistryError("registry repos must be an array")
     return [repo for repo in repos if isinstance(repo, dict)]
 
 
@@ -97,22 +102,33 @@ def init_repo(target: Path, *, slug: str, title: str, registry: Path | None = No
     if registry:
         validate_registry_append(registry, slug=slug, path=target)
 
-    target.mkdir(parents=True, exist_ok=True)
-    copy_template(template_root(), target, slug=slug, title=title)
-    if registry:
-        append_registry(registry, slug=slug, title=title, path=target)
+    target_existed = target.exists()
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+        copy_template(template_root(), target, slug=slug, title=title)
+        if registry:
+            append_registry(registry, slug=slug, title=title, path=target)
+    except Exception:
+        if not target_existed and target.exists():
+            shutil.rmtree(target)
+        raise
     return target
 
 
-def validate_registry_append(registry: Path, *, slug: str, path: Path) -> None:
+def validate_registry_append(registry: Path, *, slug: str, path: Path) -> bool:
+    try:
+        registry.parent.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        raise RegistryError(f"could not create registry parent: {registry.parent}") from error
     repos = read_registry(registry)
     for repo in repos:
         if repo.get("slug") != slug:
             continue
         existing_path = Path(str(repo.get("path", ""))).expanduser()
         if existing_path == path:
-            return
+            return False
         raise ValueError(f"registry slug conflict: {slug}")
+    return True
 
 
 def validate_segment(kind: str, value: str) -> str:
