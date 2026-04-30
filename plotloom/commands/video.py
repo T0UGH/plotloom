@@ -5,14 +5,18 @@ from pathlib import Path
 
 import click
 
+from plotloom.config import load_config
+from plotloom.errors import MediaValidationError
+from plotloom.media import probe_media
 from plotloom.output import emit
 from plotloom.paths import next_candidate_path
 from plotloom.prompts import compile_prompt
-from plotloom.config import load_config
 from plotloom.repo import find_repo_from_cwd
 from plotloom.video.adapters.dreamina_cli import DreaminaCliAdapter
 from plotloom.video.adapters.mock import MockVideoAdapter
 from plotloom.video.adapters.volcengine_seedance import VolcEngineSeedanceAdapter
+from plotloom.video.compare import compare_receipts
+from plotloom.video.downloads import download_url
 from plotloom.video.receipts import Receipt, receipt_path, write_latest_pointer, write_receipt
 from plotloom.video.types import PlotloomVideoRequest, VideoMode
 
@@ -122,7 +126,35 @@ def poll_command(ctx: click.Context, episode: str, clip: str, adapter: str | Non
     if not current_adapter or not provider_task_id:
         raise click.ClickException("--adapter and --task-id are required when latest-task.toml is missing")
 
+    task_path = _task_path(repo, clip_dir, latest_data, current_adapter, provider_task_id)
+    receipt_data = _read_toml(task_path) if task_path.exists() else {}
     status = _adapter(ctx, current_adapter).poll(provider_task_id, download_dir=clip_dir)
+    candidate_path = _candidate_from_receipt(repo, receipt_data)
+    media: dict[str, object] = {}
+    if status.video_url:
+        candidate_path = next_candidate_path(clip_dir / "candidates", ".mp4", adapter=current_adapter)
+        download_url(status.video_url, candidate_path)
+    if candidate_path and candidate_path.exists():
+        try:
+            media = probe_media(candidate_path).to_dict()
+        except MediaValidationError as error:
+            media = {"probe_error": error.message}
+    updated = _updated_receipt(
+        repo=repo,
+        episode=episode,
+        clip=clip,
+        adapter=current_adapter,
+        provider_task_id=provider_task_id,
+        status=status.status,
+        receipt_data=receipt_data,
+        candidate_path=candidate_path,
+        media=media,
+        provider_data=status.raw,
+        error_code=status.error_code,
+        error_message=status.error_message,
+    )
+    write_receipt(task_path, updated)
+    write_latest_pointer(task_path, updated)
     emit(
         {
             "ok": status.status not in {"failed", "error"},
@@ -130,7 +162,35 @@ def poll_command(ctx: click.Context, episode: str, clip: str, adapter: str | Non
             "adapter": current_adapter,
             "provider_task_id": provider_task_id,
             "status": status.status,
+            "receipt_path": str(task_path),
+            "candidate_path": str(candidate_path) if candidate_path else None,
             "message": f"video task {provider_task_id}: {status.status}",
+        },
+        as_json=ctx.obj.get("as_json"),
+    )
+
+
+@video_group.command("compare")
+@click.option("--episode", required=True)
+@click.option("--clip")
+@click.pass_context
+def compare_command(ctx: click.Context, episode: str, clip: str | None) -> None:
+    repo = _repo_path(ctx)
+    videos_dir = repo / "episodes" / episode / "videos"
+    if clip:
+        receipts = sorted((videos_dir / clip / "tasks").glob("*.toml"))
+    else:
+        receipts = sorted(videos_dir.glob("*/tasks/*.toml"))
+    rows = compare_receipts(receipts)
+    message = "\n".join(f"{row['adapter']}\t{row['status']}\t{row.get('candidate_path') or ''}" for row in rows)
+    emit(
+        {
+            "ok": True,
+            "command": "video.compare",
+            "episode": episode,
+            "clip": clip,
+            "rows": rows,
+            "message": message or "no receipts found",
         },
         as_json=ctx.obj.get("as_json"),
     )
@@ -168,3 +228,76 @@ def _read_latest(path: Path) -> dict[str, str]:
         return tomllib.loads(path.read_text(encoding="utf-8"))
     except tomllib.TOMLDecodeError as error:
         raise click.ClickException(f"could not parse latest task pointer: {path}") from error
+
+
+def _read_toml(path: Path) -> dict[str, object]:
+    try:
+        return tomllib.loads(path.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as error:
+        raise click.ClickException(f"could not parse receipt: {path}") from error
+
+
+def _task_path(repo: Path, clip_dir: Path, latest_data: dict[str, str], adapter: str, provider_task_id: str) -> Path:
+    receipt_value = latest_data.get("receipt")
+    if receipt_value:
+        return clip_dir / receipt_value
+    return receipt_path(repo, clip_dir.parent.parent.name, clip_dir.name, adapter, provider_task_id)
+
+
+def _candidate_from_receipt(repo: Path, receipt_data: dict[str, object]) -> Path | None:
+    candidate = receipt_data.get("candidate_path")
+    if not candidate:
+        return None
+    path = Path(str(candidate))
+    return path if path.is_absolute() else repo / path
+
+
+def _updated_receipt(
+    *,
+    repo: Path,
+    episode: str,
+    clip: str,
+    adapter: str,
+    provider_task_id: str,
+    status: str,
+    receipt_data: dict[str, object],
+    candidate_path: Path | None,
+    media: dict[str, object],
+    provider_data: dict[str, object],
+    error_code: str | None,
+    error_message: str | None,
+) -> Receipt:
+    return Receipt(
+        adapter=adapter,
+        provider=str(receipt_data.get("provider") or _provider_for(adapter)),
+        provider_task_id=provider_task_id,
+        status=status,
+        repo=str(receipt_data.get("repo") or repo),
+        episode=str(receipt_data.get("episode") or episode),
+        clip=str(receipt_data.get("clip") or clip),
+        mode=str(receipt_data.get("mode") or "text-to-video"),
+        prompt_file=str(receipt_data.get("prompt_file") or ""),
+        compiled_prompt_sha256=str(receipt_data.get("compiled_prompt_sha256") or ""),
+        prompt_chars=int(receipt_data.get("prompt_chars") or 0),
+        duration=int(receipt_data.get("duration") or 0),
+        ratio=str(receipt_data.get("ratio") or ""),
+        resolution=str(receipt_data.get("resolution") or ""),
+        audio_intent=str(receipt_data.get("audio_intent") or "native_if_supported"),
+        credential_source=str(receipt_data.get("credential_source") or ("mock" if adapter == "mock" else "config")),
+        submitted_at=str(receipt_data.get("submitted_at")) if receipt_data.get("submitted_at") else None,
+        candidate_path=str(candidate_path.relative_to(repo)) if candidate_path and candidate_path.is_relative_to(repo) else str(candidate_path) if candidate_path else None,
+        error_code=error_code,
+        error_message=error_message,
+        provider_data=provider_data,
+        media=media,
+    )
+
+
+def _provider_for(adapter: str) -> str:
+    if adapter == "mock":
+        return "local"
+    if adapter == "dreamina-cli":
+        return "dreamina"
+    if adapter == "volcengine-seedance":
+        return "volcengine"
+    return adapter

@@ -90,7 +90,7 @@ def _attempted_command(args: list[str]) -> str:
             return f"image.{parts[1]}"
         return "image"
     if parts[0] == "video":
-        if len(parts) > 1 and parts[1] in {"poll", "submit"}:
+        if len(parts) > 1 and parts[1] in {"compare", "poll", "submit"}:
             return f"video.{parts[1]}"
         return "video"
     if parts[0] in {"init", "validate"}:
