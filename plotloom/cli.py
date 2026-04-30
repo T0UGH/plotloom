@@ -36,14 +36,18 @@ def _attempted_command(args: list[str]) -> str:
         "--duration-tolerance",
         "--episode",
         "--fps",
+        "--kind",
         "--mode",
         "--output",
         "--path",
+        "--prompt-file",
         "--ratio",
         "--repo",
         "--resolution",
+        "--scene",
         "--status",
         "--task-id",
+        "--timeout",
         "--title",
     }
     flag_options = {"--json", "--quiet", "--dry-run", "-h", "--help"}
@@ -81,6 +85,10 @@ def _attempted_command(args: list[str]) -> str:
         if len(parts) > 1 and parts[1] in {"check", "compile", "extract", "list"}:
             return f"prompt.{parts[1]}"
         return "prompt"
+    if parts[0] == "image":
+        if len(parts) > 1 and parts[1] in {"generate"}:
+            return f"image.{parts[1]}"
+        return "image"
     if parts[0] == "video":
         if len(parts) > 1 and parts[1] in {"poll", "submit"}:
             return f"video.{parts[1]}"
@@ -181,6 +189,7 @@ def main(ctx: click.Context, repo: str | None, config_path: str | None, as_json:
 
 
 from plotloom.commands.config import config_group  # noqa: E402
+from plotloom.commands.image import image_group  # noqa: E402
 from plotloom.commands.media import media_group  # noqa: E402
 from plotloom.commands.prompt import prompt_group  # noqa: E402
 from plotloom.commands.repo import init_command, validate_command  # noqa: E402
@@ -189,6 +198,7 @@ from plotloom.commands.select import select_command  # noqa: E402
 from plotloom.commands.video import video_group  # noqa: E402
 
 main.add_command(config_group)
+main.add_command(image_group)
 main.add_command(init_command)
 main.add_command(media_group)
 main.add_command(prompt_group)
