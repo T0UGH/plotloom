@@ -1,10 +1,13 @@
 # Plotloom CLI Technical Design
 
 > 日期：2026-04-30  
-> 状态：Draft v0.1  
+> 状态：Draft v0.2
 > 目标：定义 Plotloom 自有薄 CLI 层，用于覆盖短剧生产中的确定性执行、素材归档、异步视频任务和成片验收。  
 > 相关文档：
 > - `docs/design/2026-04-30-plotloom-cli-brainstorm.md`
+> - `docs/design/2026-04-30-plotloom-cli-command-surface.md`
+> - `docs/design/2026-04-30-plotloom-cli-contract-details.md`
+> - `docs/design/cli-design.md`（历史草案，已由本文档取代）
 > - `docs/research/2026-04-30-volcengine-seedance-api-spike.md`
 > - `docs/prd/plotloom-mvp-prd.zh.md`
 
@@ -29,6 +32,14 @@ state = visible files in series repo
 intelligence = Plotloom skills / agent
 ```
 
+当前已收敛的产品决策：
+
+- MVP 视频层要把 `dreamina-cli`、`happyhorse-fal`、`volcengine-seedance` 三家都接通，用同一套 submit/poll/receipt 契约做真实对比。
+- 先设计稳定命令面，再写实现；执行计划应以本文档的命令和文件契约为准。
+- `prompt extract/check` 不是后置增强；只要真实视频 adapter 进入 MVP，`video submit` 就必须先把 `video-prompts-en.md` 编译成 provider-ready prompt。
+- image adapter 依赖本机 Codex 安装和内置 `image_generation` 能力；实现可吸收 `codex-imagegen2-api` 的本地 JSON API 模式，但不依赖某个私有 helper 安装路径。
+- 本地密钥和 provider 配置集中放在 `~/.plotloom/.env.toml`，不得写入 series repo、receipt、日志或聊天输出。
+
 ## 2. 为什么选 Python，不选 JS
 
 ### 2.1 Python 更适合当前 MVP
@@ -41,7 +52,7 @@ Plotloom MVP 的 CLI 任务主要是本地生产工具链：
 - 下载视频 URL。
 - 调火山方舟 Python SDK。
 - 复用现有 Python 脚本：`init_series.py`、`validate_repo.py`、`select_candidate.py`、`stitch_ffmpeg.py`。
-- 与 Codex imagegen2 helper / Dreamina CLI / VolcEngine API 做 thin adapter。
+- 与 Codex image generation / Dreamina CLI / fal HappyHorse / VolcEngine Seedance API 做 thin adapter。
 
 这些都更贴近 Python。
 
@@ -88,17 +99,18 @@ CLI 做：
 - image generate/import/select
 - video submit/poll/download
 - media probe / stitch
-- package manifest
+- delivery summary / handoff text
 
 CLI 不做：
 
 - 剧情生成
 - 爽点判断
-- prompt 改写
+- 创作性 prompt 改写；provider-aware extract/compile 属于 adapter glue
 - 用户交互确认
 - 多 agent 编排
 - daemon / queue / dashboard
 - hidden DB
+- persistent package/workflow manifest
 
 ### 3.2 Repo-visible state
 
@@ -107,8 +119,9 @@ CLI 不做：
 允许：
 
 ```text
-episodes/ep001/videos/clip-01/task.volcengine.toml
-episodes/ep001/videos/clip-01/candidates/v001.mp4
+episodes/ep001/videos/clip-01/tasks/volcengine-seedance-cgt-20260430120000.toml
+episodes/ep001/videos/clip-01/latest-task.toml
+episodes/ep001/videos/clip-01/candidates/v001.volcengine-seedance.mp4
 episodes/ep001/videos/clip-01/selected.mp4
 ```
 
@@ -120,7 +133,7 @@ episodes/ep001/videos/clip-01/selected.mp4
 hidden queue worker state
 ```
 
-`task.*.toml` 是任务收据，不是 workflow runtime。
+`tasks/*.toml` 是任务收据，不是 workflow runtime。它只描述一次 provider submit/poll 的可见证据，不能变成隐藏调度状态。
 
 ### 3.3 Sync image, async video
 
@@ -145,8 +158,9 @@ Adapter 只处理工具差异，不承载 Plotloom 产品逻辑。
 
 例如：
 
-- `codex-imagegen`：调用 Codex imagegen2 helper，复制输出图。
-- `dreamina`：调用 Dreamina CLI，记录 submit_id，query/download。
+- `codex-app-server`：通过本机 Codex `image_generation` 能力生成图片，复制输出图。
+- `dreamina-cli`：调用 Dreamina CLI，记录 submit_id，query/download。
+- `happyhorse-fal`：调用 fal queue API，记录 request_id，poll/download。
 - `volcengine-seedance`：调用火山方舟 API，记录 task_id，poll/download。
 - `mock`：生成本地假视频，保障 E2E。
 
@@ -170,23 +184,26 @@ plotloom/
   videos.py
   adapters/
     __init__.py
-    image_codex.py
+    image_codex_app_server.py
     video_mock.py
-    video_dreamina.py
-    video_volcengine.py
+    video_dreamina_cli.py
+    video_happyhorse_fal.py
+    video_volcengine_seedance.py
   commands/
     __init__.py
+    config.py
     repos.py
     init.py
     validate.py
     doctor.py
     image.py
     asset.py
+    prompt.py
     video.py
     select.py
     stitch.py
     media.py
-    package.py
+    delivery.py
 scripts/
   ... existing deterministic helpers, gradually migrated or wrapped ...
 ```
@@ -210,6 +227,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+happyhorse = ["fal-client>=0.7.0"]
 volcengine = ["volcengine-python-sdk[ark]>=5.0.0"]
 dev = ["pytest>=8", "ruff>=0.5"]
 
@@ -222,9 +240,124 @@ plotloom = "plotloom.cli:main"
 - Python 3.11+：标准库有 `tomllib` 读 TOML；写 TOML 用 `tomli-w` 或自写小函数。
 - `click`：简单稳定，videoclaw 也用 click；不用 Typer 避免额外复杂度。
 - `requests`：下载视频 URL。
+- `fal-client` 作为 optional dependency，只有 `happyhorse-fal` adapter 需要。
 - `volcengine-python-sdk[ark]` 作为 optional dependency，避免没有 key 时污染基础安装。
 
+### 5.1 Local config / secret config
+
+Plotloom 增加一个 user-level config 文件：
+
+```text
+~/.plotloom/.env.toml
+```
+
+用途：
+
+- 存放 provider API key、本机 binary 路径、默认模型和默认参数。
+- 只服务 CLI adapter preflight/submit/poll，不承载 series repo 生产状态。
+- 不写入 Git，不复制进 series repo，不出现在 receipt、日志或聊天输出中。
+
+文件权限：
+
+- `plotloom config init` 创建 `~/.plotloom/` 和 `.env.toml` 时应设置为 `0600`。
+- `plotloom config doctor` 如果发现权限过宽，应返回清晰告警。
+
+读取优先级：
+
+```text
+explicit CLI flag
+  -> environment variable
+  -> ~/.plotloom/.env.toml
+  -> built-in default
+```
+
+环境变量保留为 CI/临时覆盖入口；`.env.toml` 是本机长期配置入口。
+
+建议结构：
+
+```toml
+[plotloom]
+repos_root = "~/plotloom_repo"
+registry_path = "~/plotloom.toml"
+default_image_adapter = "codex-app-server"
+default_video_adapters = ["dreamina-cli", "happyhorse-fal", "volcengine-seedance"]
+
+[adapters.codex-app-server]
+enabled = true
+codex_binary = "codex"
+# Optional. Direct app-server endpoint can be used if available; MVP may use codex exec.
+app_server_url = ""
+
+[adapters.dreamina-cli]
+enabled = true
+binary = "dreamina"
+home = "~"
+
+[adapters.happyhorse-fal]
+enabled = true
+fal_key = ""
+default_resolution = "720p"
+
+[adapters.volcengine-seedance]
+enabled = true
+ark_api_key = ""
+base_url = "https://ark.cn-beijing.volces.com/api/v3"
+model = "doubao-seedance-2-0-260128"
+default_resolution = "720p"
+```
+
+等价环境变量：
+
+```text
+PLOTLOOM_CONFIG
+PLOTLOOM_REPOS_ROOT
+PLOTLOOM_REGISTRY_PATH
+FAL_KEY
+ARK_API_KEY
+DREAMINA_BINARY
+DREAMINA_HOME
+CODEX_BINARY
+CODEX_APP_SERVER_URL
+```
+
+安全规则：
+
+- CLI 可以显示 key 是否存在，但只能显示 `present/absent`，不能显示明文或前后缀。
+- receipt 中只能记录 `credential_source = "env"` 或 `credential_source = "config"` 这类来源，不记录值。
+- `config set` 如果未来实现，避免把 secret 放进 shell history；MVP 可以只提供 `config init/path/doctor`，让用户手动编辑 TOML。
+
 ## 6. 命令设计
+
+命令面先按 v0.2 固定，后续执行计划不要再重新发明语法。
+
+通用参数：
+
+```bash
+plotloom --config ~/.plotloom/.env.toml <command>
+plotloom <command> --repo PATH
+```
+
+Repo 解析顺序：
+
+1. 显式 `--repo PATH`。
+2. 从当前目录向上找 `series.md`。
+3. 读取 `registry_path`，默认 `~/plotloom.toml`。
+4. 多个 active repo 或无法唯一匹配时，列出候选并返回非零，让 agent/用户选择。
+5. registry 中路径失效时，不自动重建目录。
+
+### 6.0 Config commands
+
+```bash
+plotloom config path
+plotloom config init
+plotloom config doctor
+```
+
+MVP 只需要这三个命令：
+
+- `config path`：打印当前会读取的 config 路径。
+- `config init`：创建 `~/.plotloom/.env.toml` 模板，文件权限 `0600`，已存在则不覆盖。
+- `config doctor`：检查 TOML 可解析、权限合理、关键 adapter 配置是否 present，不打印 secret。
 
 ### 6.1 Repo commands
 
@@ -241,28 +374,23 @@ plotloom doctor [--repo PATH]
 MVP 必须：
 
 ```bash
-plotloom init
+plotloom init <slug> --title "..."
 plotloom repos list
 plotloom validate
 plotloom doctor
 ```
 
-Repo discovery：
-
-1. 如果 `--repo PATH` 存在，使用它。
-2. 否则从当前目录向上找 `series.md`。
-3. 否则读 `~/plotloom.toml`。
-4. 如果多个 active repo，不交互选择，只输出候选并返回非零或提示 agent 选择。
+`init` 不做交互式题材生成；slug/title 是命令输入。`--path` 省略时使用 `repos_root/<slug>`，默认 `~/plotloom_repo/<slug>`。
 
 ### 6.2 Image commands
 
 MVP 图片同步。
 
 ```bash
-plotloom image generate --kind cast --character lin-qiao --adapter codex-imagegen
-plotloom image generate --kind scene --scene boardroom --adapter codex-imagegen
-plotloom image generate --kind cover --episode ep001 --adapter codex-imagegen
-plotloom image generate --kind reference --episode ep001 --clip clip-01 --adapter codex-imagegen
+plotloom image generate --kind cast --character lin-qiao --adapter codex-app-server --prompt-file PATH
+plotloom image generate --kind scene --scene boardroom --adapter codex-app-server --prompt-file PATH
+plotloom image generate --kind cover --episode ep001 --adapter codex-app-server --prompt-file PATH
+plotloom image generate --kind reference --episode ep001 --clip clip-01 --adapter codex-app-server --prompt-file PATH
 plotloom image list --kind cover --episode ep001
 plotloom image info PATH
 ```
@@ -314,11 +442,11 @@ plotloom prompt check --episode ep001
 plotloom prompt extract --episode ep001 --clip clip-01 --field prompt-string
 ```
 
-MVP 可选，但建议尽早做。
+MVP 必须具备 prompt 编译能力，但不一定先暴露成复杂命令。
 
 原因：之前已经踩过坑，Markdown artifact 不能原样喂给 Dreamina CLI / API。
 
-`prompt extract` 应从 `video-prompts-en.md` 中提取纯 prompt string，避免 adapter 收到：
+`video submit` 内部必须执行 provider-aware prompt compile，从 `video-prompts-en.md` 中提取纯 prompt string，避免 adapter 收到：
 
 ```text
 clip-01
@@ -329,16 +457,20 @@ Ending frame
 
 这类内部 artifact。
 
+`prompt check/extract` 保留为调试命令，用于在 submit 前人工确认最终会提交给 provider 的 prompt。
+
 ### 6.5 Video commands
 
 视频异步优先。
 
 ```bash
 plotloom video submit --episode ep001 --clip clip-01 --adapter mock
-plotloom video submit --episode ep001 --clip clip-01 --adapter dreamina
-plotloom video submit --episode ep001 --clip clip-01 --adapter volcengine-seedance
+plotloom video submit --episode ep001 --clip clip-01 --adapter dreamina-cli --mode text-to-video
+plotloom video submit --episode ep001 --clip clip-01 --adapter happyhorse-fal --mode reference-to-video
+plotloom video submit --episode ep001 --clip clip-01 --adapter volcengine-seedance --mode text-to-video
 
 plotloom video poll --episode ep001 --clip clip-01
+plotloom video poll --receipt episodes/ep001/videos/clip-01/tasks/happyhorse-fal-req_xxx.toml
 plotloom video poll --task-id cgt-... --adapter volcengine-seedance --download-dir PATH
 plotloom video list --adapter volcengine-seedance --status queued
 plotloom video cancel --task-id cgt-... --adapter volcengine-seedance
@@ -348,30 +480,36 @@ MVP 必须：
 
 ```bash
 plotloom video submit --adapter mock
-plotloom video submit --adapter volcengine-seedance  # key ready 后
+plotloom video submit --adapter dreamina-cli
+plotloom video submit --adapter happyhorse-fal
+plotloom video submit --adapter volcengine-seedance
 plotloom video poll
 ```
 
-Dreamina 可保留为 adapter，但鉴于排队慢，优先级低于 VolcEngine 实测。
+三家真实 adapter 都进入 MVP。当前不预设默认赢家；先接通并用同题 clip 实测速度、成本、音频、画面质量、角色一致性和失败模式。
 
 Task receipt 示例：
 
 ```toml
+receipt_version = 1
 adapter = "volcengine-seedance"
 task_id = "cgt-20260430120000-xxxxx"
 status = "queued"
 submitted_at = "2026-04-30T12:00:00+08:00"
 model = "doubao-seedance-2-0-260128"
+mode = "text-to-video"
 ratio = "9:16"
 resolution = "720p"
 duration = 15
 prompt_file = "episodes/ep001/video-prompts-en.md"
+compiled_prompt_sha256 = "..."
 clip = "clip-01"
+credential_source = "config"
 ```
 
 `poll` 成功后：
 
-1. 下载 `video_url` 到 `candidates/vNNN.mp4`。
+1. 下载 `video_url` 或复制本地结果到 `candidates/vNNN.<adapter>.mp4`。
 2. 跑 `ffprobe`。
 3. 更新 receipt：`status=succeeded`、`candidate_path=...`、`duration`、`resolution`、`fps`。
 4. 不长期依赖 24h 临时 URL。
@@ -409,14 +547,16 @@ plotloom stitch --episode ep001 --normalize
 
 MVP 策略：默认严格；`--normalize` 作为显式开关。
 
-### 6.8 Package / delivery manifest
+### 6.8 Delivery summary
 
 ```bash
-plotloom package --episode ep001
-plotloom delivery manifest --episode ep001
+plotloom delivery summary --episode ep001
+plotloom delivery summary --episode ep001 --output /tmp/plotloom-delivery-ep001.toml
 ```
 
-MVP 只生成本地 manifest，不直接发 Feishu。
+MVP 不创建 first-party persistent manifest，不写 `manifest.json` / `workflow-state.json` / `media-info.json` 这类状态文件。
+
+默认行为是把交付摘要输出到 stdout，供 agent 或 Feishu adapter 读取；只有用户显式传 `--output` 时，才写一个临时交付摘要文件。若写文件，建议放在 `/tmp` 或用户指定路径，不默认落在 series repo 内。
 
 Feishu 发送仍由 Hermes / nova-lark 完成。
 
@@ -465,6 +605,15 @@ class ImageGenerateResult:
 class VideoAdapter(Protocol):
     name: str
 
+    def capabilities(self) -> VideoAdapterCapabilities:
+        ...
+
+    def validate_request(self, request: VideoSubmitRequest) -> ValidationResult:
+        ...
+
+    def compile_native_request(self, request: VideoSubmitRequest) -> NativeVideoRequest:
+        ...
+
     def submit(self, request: VideoSubmitRequest) -> VideoSubmitResult:
         ...
 
@@ -475,7 +624,34 @@ class VideoAdapter(Protocol):
         ...
 ```
 
+所有真实 adapter 都必须先声明 capability，再校验 normalized request，最后编译 provider-native request。不要把同一份 `duration/resolution/ratio/reference/audio` 参数无差别传给三家。
+
 `mock` adapter 可以同步生成文件，但仍通过 `VideoSubmitResult` 返回 `local_path`。
+
+`VideoSubmitRequest` 至少包含：
+
+```python
+@dataclass
+class VideoSubmitRequest:
+    repo: Path
+    episode: str
+    clip: str
+    adapter: str
+    mode: Literal["text-to-video", "image-to-video", "reference-to-video", "video-edit"]
+    prompt_file: Path
+    prompt_text: str
+    ratio: str
+    resolution: str
+    duration: int
+    audio_intent: Literal["none", "native_if_supported", "require_native"] = "native_if_supported"
+    seed: int | None = None
+    first_frame: Path | None = None
+    reference_images: list[Path] = field(default_factory=list)
+    reference_videos: list[Path] = field(default_factory=list)
+    source_video: Path | None = None
+    allow_downgrade: bool = False
+    allow_normalize_duration: bool = False
+```
 
 ```python
 @dataclass
@@ -528,12 +704,30 @@ selected-prev-YYYYMMDD-HHMMSSffffff.ext
 MVP 使用 TOML 作为结构化可见状态：
 
 - `~/plotloom.toml`
-- `task.<adapter>.toml`
-- optional package manifest TOML
+- `~/.plotloom/.env.toml`
+- `episodes/<ep>/videos/<clip>/tasks/<adapter>-<task-id-or-timestamp>.toml`
+- `episodes/<ep>/videos/<clip>/latest-task.toml`
 
 不要写 JSON/YAML 作为 first-party repo artifact。
 
 脚本 stdout 可以输出 JSON 供 agent 消费，但不作为持久 artifact。
+
+`latest-task.toml` 只能作为指针或浅拷贝，不应覆盖历史 receipt。推荐内容：
+
+```toml
+receipt = "tasks/volcengine-seedance-cgt-20260430120000.toml"
+adapter = "volcengine-seedance"
+task_id = "cgt-20260430120000-xxxxx"
+updated_at = "2026-04-30T12:30:00+08:00"
+```
+
+候选文件推荐带 adapter 后缀，方便同题对比：
+
+```text
+candidates/v001.dreamina-cli.mp4
+candidates/v002.happyhorse-fal.mp4
+candidates/v003.volcengine-seedance.mp4
+```
 
 ## 9. Error handling
 
@@ -551,105 +745,24 @@ CLI 应统一返回：
 - 不打印 API token / OAuth code / credential file。
 - 给出下一步可执行修复建议。
 
-## 10. MVP implementation plan
+## 10. Implementation plan boundary
 
-### Phase 1: CLI shell + repo E2E
+本文档只定义 CLI 设计、命令契约和文件契约，不再承载执行计划。
 
-实现：
+后续重新写 implementation plan 时，应以本文档为准，尤其是：
 
-```bash
-plotloom init
-plotloom repos list
-plotloom validate
-plotloom doctor
-plotloom video submit --adapter mock
-plotloom select
-plotloom stitch
-plotloom media probe
-```
-
-验收：
-
-```bash
-plotloom init fake-heiress --title "Fake Heiress"
-plotloom validate --repo ~/plotloom_repo/fake-heiress
-plotloom video submit --repo ~/plotloom_repo/fake-heiress --episode ep001 --clip clip-01 --adapter mock
-plotloom select ~/plotloom_repo/fake-heiress/episodes/ep001/videos/clip-01/candidates/v001.mp4
-plotloom stitch --repo ~/plotloom_repo/fake-heiress --episode ep001
-ffprobe ~/plotloom_repo/fake-heiress/episodes/ep001/videos/final.mp4
-```
-
-### Phase 2: sync image generation
-
-实现：
-
-```bash
-plotloom image generate --kind cast --character ... --adapter codex-imagegen
-plotloom image generate --kind cover --episode ep001 --adapter codex-imagegen
-plotloom asset import/select
-```
-
-验收：
-
-- `character-grid.png` 正确生成/备份。
-- cover candidates 正确编号。
-- selected copy 行为正确。
-
-### Phase 3: VolcEngine async video adapter
-
-前提：贵平提供 `ARK_API_KEY` 并确认模型开通。
-
-实现：
-
-```bash
-plotloom video submit --adapter volcengine-seedance
-plotloom video poll
-plotloom video cancel
-```
-
-验收：
-
-- 创建 task 成功。
-- receipt 写入。
-- poll 能看到 queued/running/succeeded。
-- 成功后下载 candidate。
-- ffprobe 正常。
-
-### Phase 4: Dreamina adapter
-
-实现：
-
-```bash
-plotloom video submit --adapter dreamina
-plotloom video poll --adapter dreamina
-```
-
-验收：
-
-- 能包装 `dreamina text2video/multimodal2video`。
-- 能记录 submit_id。
-- 能 query/download。
-
-### Phase 5: prompt extract/check
-
-实现：
-
-```bash
-plotloom prompt check
-plotloom prompt extract
-```
-
-验收：
-
-- 不再把 Markdown artifact 原样传给模型。
-- 能提取 `Prompt string for --prompt`。
+- 三家真实视频 adapter 都进入 MVP：`dreamina-cli`、`happyhorse-fal`、`volcengine-seedance`。
+- 命令面先按 Section 6 固定。
+- `video submit` 内置 prompt compile/check。
+- task receipt 使用 `tasks/*.toml` + `latest-task.toml`，不覆盖历史。
+- secrets/config 使用 `~/.plotloom/.env.toml`，不落入 series repo。
 
 ## 11. Open questions
 
-1. `plotloom image generate` 的 prompt 来源是否允许用临时 `--prompt-file`？建议允许，方便 agent 生成 brief 后调用。
-2. 封面图是否需要默认 artifact `cover-prompt.md`？当前 PRD 不希望增加默认中间文件。建议由 agent 临时生成 prompt file，CLI 不强制持久化。
-3. `task.volcengine.toml` 是单任务覆盖，还是多任务并存？建议 clip 目录下可有 `tasks/<task_id>.toml`，同时 `latest-task.toml` 指向最近任务。MVP 可先单文件。
-4. `plotloom select` 是否接受 remote URL？MVP 不接受，只接受本地 candidate 文件。
+1. 封面图是否需要默认 artifact `cover-prompt.md`？当前 PRD 不希望增加默认中间文件。建议由 agent 临时生成 prompt file，CLI 不强制持久化。
+2. `plotloom select` 是否接受 remote URL？MVP 不接受，只接受本地 candidate 文件。
+3. 三家 adapter 的默认同题比较指标怎么落文档？建议 comparison report 作为显式命令或临时输出，不作为 hidden state。
+4. Codex 图片 adapter 的 MVP 实现建议移植 `codex-imagegen2-api` 的 `codex exec --enable image_generation` 模式；直接 app-server API 以后如果更稳定再替换。
 5. 是否需要真实 publish？MVP 不做。
 
 ## 12. Recommended MVP command set
@@ -658,16 +771,24 @@ plotloom prompt extract
 
 ```bash
 plotloom init <slug> --title "..."
+plotloom config init
+plotloom config doctor
 plotloom repos list
 plotloom validate [--repo PATH]
 plotloom doctor [--repo PATH]
 
-plotloom image generate --kind cast --character <slug> --adapter codex-imagegen --prompt-file PATH
-plotloom image generate --kind cover --episode ep001 --adapter codex-imagegen --prompt-file PATH
+plotloom image generate --kind cast --character <slug> --adapter codex-app-server --prompt-file PATH
+plotloom image generate --kind cover --episode ep001 --adapter codex-app-server --prompt-file PATH
 plotloom asset import ...
 plotloom select PATH/TO/candidates/v001.png
 
-plotloom video submit --episode ep001 --clip clip-01 --adapter mock|volcengine-seedance
+plotloom prompt check --episode ep001
+plotloom prompt extract --episode ep001 --clip clip-01 --field prompt-string
+
+plotloom video submit --episode ep001 --clip clip-01 --adapter mock
+plotloom video submit --episode ep001 --clip clip-01 --adapter dreamina-cli
+plotloom video submit --episode ep001 --clip clip-01 --adapter happyhorse-fal
+plotloom video submit --episode ep001 --clip clip-01 --adapter volcengine-seedance
 plotloom video poll --episode ep001 --clip clip-01
 plotloom select PATH/TO/candidates/v001.mp4
 plotloom stitch --episode ep001
@@ -683,6 +804,8 @@ plotloom dashboard
 plotloom workflow
 plotloom publish
 plotloom image poll
+plotloom voice generate
+plotloom subtitle burn
 ```
 
 ## 13. Summary

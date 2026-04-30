@@ -5,6 +5,19 @@
 > Owner: 贵平  
 > Agent: Nova  
 > Source: PRD discussion + Superpowers-style brainstorm + existing Plotloom MVP skill pack
+> Superseded: This is a historical brainstorm draft. Use `docs/design/2026-04-30-plotloom-cli-technical-design.md` as the canonical CLI design. The canonical design now requires all three real video adapters (`dreamina-cli`, `happyhorse-fal`, `volcengine-seedance`), `~/.plotloom/.env.toml` config, provider-aware prompt compile, and `tasks/*.toml` receipts.
+
+## Superseded Notice
+
+This document is kept for historical context only. Do not use it as the implementation source of truth.
+
+Current source of truth:
+
+```text
+docs/design/2026-04-30-plotloom-cli-technical-design.md
+docs/design/2026-04-30-plotloom-cli-command-surface.md
+docs/design/2026-04-30-plotloom-cli-contract-details.md
+```
 
 ## 1. Design Hypothesis
 

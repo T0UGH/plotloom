@@ -122,8 +122,8 @@ ffprobe -v error /tmp/plotloom-demo/fake-heiress-reboot/episodes/ep001/videos/fi
 
 ## Real Adapters
 
-- Image generation: private `codex-imagegen2-api` skill from `T0UGH/agent-skills`, documented in `adapters/codex.md`.
-- Video generation: Dreamina/即梦 CLI, documented in `adapters/dreamina.md` and `skills/plotloom-video-adapter/references/dreamina-cli.md`.
+- Image generation: local Codex install plus Codex app server, documented in `adapters/codex.md`.
+- Video generation: Dreamina/即梦 CLI, HappyHorse through fal.ai, and VolcEngine Seedance through Ark async APIs.
 - Stitching: local `ffmpeg` / `ffprobe` helpers.
 - Delivery: Feishu/Lark is delivery only, not state center.
 

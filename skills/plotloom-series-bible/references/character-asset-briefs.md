@@ -43,23 +43,21 @@ For each core character, capture:
 - `do-not-change` invariants;
 - target file path: `assets/cast/<slug>/character-grid.png`.
 
-## Codex Imagegen2 API Adapter
-Use the private `codex-imagegen2-api` skill from `T0UGH/agent-skills` when generating character grids through Codex. On this machine it is installed for Nova at:
-
-```text
-/Users/wangguiping/.hermes/profiles/nova/skills/personal/codex-imagegen2-api
-```
+## Codex Image Generation Adapter
+Use the `codex-app-server` image adapter when generating character grids through Codex. It depends on the user's local Codex install/auth and built-in `image_generation` capability, not on a machine-specific helper path. The adapter should follow the `codex-imagegen2-api` local JSON contract: prompt + optional images -> generated image path / `file://` URL.
 
 Command shape:
 
 ```bash
-python3 /Users/wangguiping/.hermes/profiles/nova/skills/personal/codex-imagegen2-api/scripts/codex_imagegen2.py \
+plotloom image generate \
+  --adapter codex-app-server \
+  --kind cast \
+  --character <character-slug> \
   --prompt-file /path/to/character-grid-prompt.txt \
-  --output-dir /path/to/series-repo/assets/cast/<character-slug> \
-  --filename character-grid
+  --repo /path/to/series-repo
 ```
 
-Always pass `--output-dir` so the generated image is copied into the Plotloom series repo instead of remaining only under `$CODEX_HOME/generated_images`.
+Always ensure the generated image is copied into the Plotloom series repo at `assets/cast/<character-slug>/character-grid.png` instead of remaining only under Codex's generated-images storage.
 
 ## Avoid
 - Style-locking to a third-party IP unless the user explicitly asks.
