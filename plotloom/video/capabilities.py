@@ -8,6 +8,22 @@ VOLCENGINE_RATIOS = DREAMINA_RATIOS | frozenset({"adaptive"})
 
 
 def capabilities_for(adapter: str) -> VideoAdapterCapabilities:
+    if adapter == "mock":
+        return VideoAdapterCapabilities(
+            adapter="mock",
+            modes=frozenset({VideoMode.TEXT_TO_VIDEO, VideoMode.IMAGE_TO_VIDEO, VideoMode.REFERENCE_TO_VIDEO}),
+            min_duration=1,
+            max_duration=60,
+            ratios=VOLCENGINE_RATIOS,
+            resolutions=frozenset({"720p", "1080p"}),
+            max_prompt_chars=None,
+            supports_native_audio=True,
+            supports_seed=True,
+            supports_first_frame=True,
+            supports_reference_images=True,
+            supports_reference_videos=False,
+            supports_video_edit=False,
+        )
     if adapter == "dreamina-cli":
         return VideoAdapterCapabilities(
             adapter="dreamina-cli",
