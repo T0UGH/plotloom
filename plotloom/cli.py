@@ -39,6 +39,7 @@ def _attempted_command(args: list[str]) -> str:
         "--episode",
         "--file",
         "--fps",
+        "--include-candidates",
         "--kind",
         "--mode",
         "--output",
@@ -53,7 +54,7 @@ def _attempted_command(args: list[str]) -> str:
         "--timeout",
         "--title",
     }
-    flag_options = {"--json", "--quiet", "--dry-run", "--candidate", "-h", "--help"}
+    flag_options = {"--json", "--quiet", "--dry-run", "--candidate", "--include-candidates", "-h", "--help"}
     parts: list[str] = []
     skip_next = False
     for arg in args:
@@ -96,6 +97,10 @@ def _attempted_command(args: list[str]) -> str:
         if len(parts) > 1 and parts[1] in {"import", "info", "list"}:
             return f"asset.{parts[1]}"
         return "asset"
+    if parts[0] == "delivery":
+        if len(parts) > 1 and parts[1] in {"files", "summary"}:
+            return f"delivery.{parts[1]}"
+        return "delivery"
     if parts[0] == "stitch":
         if len(parts) > 1 and parts[1] == "plan":
             return "stitch.plan"
@@ -201,6 +206,7 @@ def main(ctx: click.Context, repo: str | None, config_path: str | None, as_json:
 
 from plotloom.commands.config import config_group  # noqa: E402
 from plotloom.commands.asset import asset_group  # noqa: E402
+from plotloom.commands.delivery import delivery_group  # noqa: E402
 from plotloom.commands.doctor import doctor_command  # noqa: E402
 from plotloom.commands.image import image_group  # noqa: E402
 from plotloom.commands.media import media_group  # noqa: E402
@@ -213,6 +219,7 @@ from plotloom.commands.video import video_group  # noqa: E402
 
 main.add_command(asset_group)
 main.add_command(config_group)
+main.add_command(delivery_group)
 main.add_command(doctor_command)
 main.add_command(image_group)
 main.add_command(init_command)
