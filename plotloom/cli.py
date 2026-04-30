@@ -101,3 +101,8 @@ def main(ctx: click.Context, repo: str | None, config_path: str | None, as_json:
     """Plotloom short-drama production CLI."""
     ctx.ensure_object(dict)
     ctx.obj.update({"repo": repo, "config_path": config_path, "as_json": as_json, "quiet": quiet, "dry_run": dry_run})
+
+
+from plotloom.commands.config import config_group  # noqa: E402
+
+main.add_command(config_group)
