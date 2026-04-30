@@ -2,7 +2,9 @@
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
 
-> **Provider pivot on 2026-04-30:** Do not implement `happyhorse-fal` / fal.ai in this plan. The current provider set is `dreamina-cli`, `aliyun-bailian-wan`, and `volcengine-seedance`. Use `docs/plans/2026-04-30-plotloom-cli-implementation-plan.md` and `adapters/aliyun-bailian-wan.md` as the source of truth for the Bailian task before executing adapter work.
+> **Archived:** this plan is no longer active. Current video provider scope is `dreamina-cli` and `volcengine-seedance` only; local E2E uses `mock`. `happyhorse-fal` and `aliyun-bailian-wan` are retained only as archived research.
+
+> **Historical provider pivot on 2026-04-30:** this plan briefly pivoted from fal.ai to Bailian. That pivot was superseded; current active video providers are `dreamina-cli` and `volcengine-seedance`.
 
 **Goal:** Build Plotloom's first real async video adapter layer for `dreamina-cli`, `aliyun-bailian-wan`, and `volcengine-seedance`, including provider-specific prompt/reference compilation, capability validation, task receipts, polling, downloads, and same-prompt comparison support.
 
@@ -19,12 +21,12 @@ Read these before implementing:
 - Design: `docs/design/2026-04-30-video-adapter-three-provider-integration.md`
 - CLI design: `docs/design/cli-design.md`
 - Adapter notes:
-  - `adapters/dreamina.md`
-  - `adapters/aliyun-bailian-wan.md`
-  - `adapters/volcengine-seedance.md`
+  - `docs/adapters/dreamina-cli.md`
+  - `docs/archive/adapters/aliyun-bailian-wan.md`
+  - `docs/adapters/volcengine-seedance.md`
 - Downloaded provider references:
   - `docs/references/video-adapters/2026-04-30/dreamina-cli/`
-  - Aliyun Bailian Wan official docs linked from `adapters/aliyun-bailian-wan.md`
+  - Aliyun Bailian Wan official docs linked from `docs/archive/adapters/aliyun-bailian-wan.md`
   - `docs/references/video-adapters/2026-04-30/volcengine-seedance/`
 - Existing deterministic scripts:
   - `scripts/init_series.py`
@@ -1592,7 +1594,7 @@ git commit -m "feat: add video adapter comparison report"
 
 **Files:**
 - Modify if needed: `docs/design/2026-04-30-video-adapter-three-provider-integration.md`
-- Modify if needed: `adapters/*.md`
+- Modify if needed: `docs/adapters/*.md`
 
 **Step 1: Run full tests**
 
@@ -1642,7 +1644,7 @@ Expected: `reference snapshots sanitized`.
 Check that:
 
 - `docs/design/cli-design.md` still says this phase integrates all three providers.
-- `adapters/dreamina.md`, `adapters/happyhorse-fal.md`, `adapters/volcengine-seedance.md` match implemented behavior.
+- `docs/adapters/dreamina-cli.md`, `docs/archive/adapters/happyhorse-fal.md`, `docs/adapters/volcengine-seedance.md` match implemented behavior.
 - No code path prints API keys or credential files.
 
 **Step 5: Commit final fixes**

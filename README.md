@@ -187,6 +187,7 @@ plotloom config doctor --adapter volcengine-seedance
 ```
 
 更多 smoke 步骤见 [Plotloom Provider Smoke Runbook](docs/runbooks/plotloom-provider-smoke.md)。
+Adapter and host notes are indexed in [docs/README.md](docs/README.md).
 
 ## CLI 命令
 

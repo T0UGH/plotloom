@@ -23,13 +23,13 @@ Use after all required `episodes/epXXX/videos/clip-*/selected.mp4` files exist.
 ## Read These Resources When...
 - Read `references/ffmpeg.md` before probing or stitching.
 - Use `templates/delivery-note.md` after final verification or delivery.
-- Use repo-level `scripts/ffprobe_media.py` and `scripts/stitch_ffmpeg.py` for deterministic work.
+- Use `plotloom --repo <repo> media probe <path>` and `plotloom --repo <repo> stitch --episode <episode>` for deterministic work.
 
 ## Workflow
 1. Find selected clips in episode clip order.
 2. Stop if any required selected clip is missing.
-3. Use ffprobe helper to inspect each input.
-4. Use ffmpeg helper to stitch or normalize + stitch.
+3. Use `plotloom media probe` to inspect each input.
+4. Use `plotloom stitch` to stitch selected clips; use `--normalize` only when the target media behavior is understood.
 5. Save `episodes/epXXX/videos/final.mp4`.
 6. Verify final file exists, is probeable, has nonzero duration, and matches expected clip count/order.
 7. Deliver via nova-lark / lark-cli when requested.

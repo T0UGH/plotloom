@@ -9,7 +9,7 @@
       "expectations": [
         "Uses rubric evidence",
         "Does not silently choose if ambiguous",
-        "Uses select_candidate.py only after accept"
+        "Uses plotloom select only after accept"
       ]
     },
     {

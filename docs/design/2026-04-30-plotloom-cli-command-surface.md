@@ -7,6 +7,8 @@
 > - `docs/design/2026-04-30-plotloom-cli-technical-design.md`
 > - `docs/design/2026-04-30-plotloom-cli-contract-details.md`
 
+> Current implementation note: this remains a command-surface design draft and includes some future commands/options. The implemented CLI provider set is `mock`, `dreamina-cli`, `volcengine-seedance`, plus `codex-app-server` for images. Use `README.md`, `plotloom --help`, and `docs/README.md` for current user-facing behavior.
+
 ## 1. Command Shape
 
 Plotloom CLI 是 repo-first 的确定性执行层。命令必须适合 agent 非交互调用，不能依赖 TUI、prompt 选择或隐藏状态。
@@ -61,7 +63,7 @@ User-level config 放在 `~/.plotloom/.env.toml`。它只保存本机 provider �
 ```bash
 plotloom config path
 plotloom config init [--force] [--print-template]
-plotloom config doctor [--adapter codex-app-server|dreamina-cli|happyhorse-fal|volcengine-seedance|all]
+plotloom config doctor [--adapter codex-app-server|dreamina-cli|volcengine-seedance|all]
 ```
 
 Behavior:
@@ -78,7 +80,7 @@ Template:
 repos_root = "~/plotloom_repo"
 registry_path = "~/plotloom.toml"
 default_image_adapter = "codex-app-server"
-default_video_adapters = ["dreamina-cli", "happyhorse-fal", "volcengine-seedance"]
+default_video_adapters = ["dreamina-cli", "volcengine-seedance"]
 
 [adapters.codex-app-server]
 enabled = true
@@ -89,11 +91,6 @@ app_server_url = ""
 enabled = true
 binary = "dreamina"
 home = "~"
-
-[adapters.happyhorse-fal]
-enabled = true
-fal_key = ""
-default_resolution = "720p"
 
 [adapters.volcengine-seedance]
 enabled = true
@@ -115,7 +112,7 @@ plotloom repos set-status <slug> active|paused|archived
 plotloom repos remove <slug>
 plotloom repos resolve [<slug>]
 plotloom validate [--episode ep001] [--require-prompts] [--require-media]
-plotloom doctor [--adapter all|codex-app-server|dreamina-cli|happyhorse-fal|volcengine-seedance] [--deep]
+plotloom doctor [--adapter all|codex-app-server|dreamina-cli|volcengine-seedance] [--deep]
 ```
 
 Design notes:
@@ -124,7 +121,7 @@ Design notes:
 - `--path` 默认是 `repos_root/<slug>`。
 - `repos remove` 只移除 registry entry，不删除真实目录。CLI 不提供隐式删目录能力。
 - `validate` 检查 Plotloom contract：`series.md`、`characters.md`、`episodes/`、episode prompt/media 是否存在。
-- `doctor` 检查本机依赖：config、Codex、Dreamina、fal、Ark SDK、ffmpeg/ffprobe。
+- `doctor` 检查本机依赖：config、Codex、Dreamina、Ark API/SDK、ffmpeg/ffprobe。
 
 Examples:
 
@@ -166,7 +163,7 @@ Behavior:
 Examples:
 
 ```bash
-plotloom prompt check --episode ep001 --clip clip-01 --adapter happyhorse-fal --mode reference-to-video
+plotloom prompt check --episode ep001 --clip clip-01 --adapter volcengine-seedance --mode reference-to-video
 plotloom prompt compile --episode ep001 --clip clip-01 --adapter volcengine-seedance --mode text-to-video
 ```
 
@@ -252,7 +249,7 @@ Video is async-first. `submit` writes a visible receipt; `poll` updates it and d
 ```bash
 plotloom video submit --episode ep001 --clip clip-01 --adapter mock [COMMON_VIDEO_OPTIONS]
 plotloom video submit --episode ep001 --clip clip-01 --adapter dreamina-cli --mode MODE [COMMON_VIDEO_OPTIONS]
-plotloom video submit --episode ep001 --clip clip-01 --adapter happyhorse-fal --mode MODE [COMMON_VIDEO_OPTIONS]
+plotloom video submit --episode ep001 --clip clip-01 --adapter volcengine-seedance --mode MODE [COMMON_VIDEO_OPTIONS]
 plotloom video submit --episode ep001 --clip clip-01 --adapter volcengine-seedance --mode MODE [COMMON_VIDEO_OPTIONS]
 
 plotloom video poll --receipt PATH [--download-dir PATH] [--no-download]
@@ -290,7 +287,7 @@ Receipt paths:
 
 ```text
 episodes/ep001/videos/clip-01/tasks/dreamina-cli-<submit-id>.toml
-episodes/ep001/videos/clip-01/tasks/happyhorse-fal-<request-id>.toml
+episodes/ep001/videos/clip-01/tasks/volcengine-seedance-<request-id>.toml
 episodes/ep001/videos/clip-01/tasks/volcengine-seedance-<task-id>.toml
 episodes/ep001/videos/clip-01/latest-task.toml
 ```
@@ -299,7 +296,7 @@ Candidate paths:
 
 ```text
 episodes/ep001/videos/clip-01/candidates/v001.dreamina-cli.mp4
-episodes/ep001/videos/clip-01/candidates/v002.happyhorse-fal.mp4
+episodes/ep001/videos/clip-01/candidates/v002.volcengine-seedance.mp4
 episodes/ep001/videos/clip-01/candidates/v003.volcengine-seedance.mp4
 ```
 
@@ -315,7 +312,7 @@ Examples:
 
 ```bash
 plotloom video submit --episode ep001 --clip clip-01 --adapter dreamina-cli --mode text-to-video --duration 15 --ratio 9:16 --resolution 720p
-plotloom video submit --episode ep001 --clip clip-01 --adapter happyhorse-fal --mode reference-to-video --reference-image assets/cast/lin-qiao/character-grid.png
+plotloom video submit --episode ep001 --clip clip-01 --adapter volcengine-seedance --mode reference-to-video --reference-image assets/cast/lin-qiao/character-grid.png
 plotloom video submit --episode ep001 --clip clip-01 --adapter volcengine-seedance --mode image-to-video --first-frame episodes/ep001/images/references/clip-01/selected.png
 plotloom video poll --episode ep001 --clip clip-01 --latest
 plotloom video compare --episode ep001 --clip clip-01
@@ -417,7 +414,7 @@ plotloom select ~/plotloom_repo/fake-heiress/episodes/ep001/images/covers/candid
 plotloom prompt check --repo ~/plotloom_repo/fake-heiress --episode ep001 --clip clip-01 --adapter dreamina-cli --mode text-to-video
 
 plotloom video submit --repo ~/plotloom_repo/fake-heiress --episode ep001 --clip clip-01 --adapter dreamina-cli --mode text-to-video --duration 15 --ratio 9:16 --resolution 720p
-plotloom video submit --repo ~/plotloom_repo/fake-heiress --episode ep001 --clip clip-01 --adapter happyhorse-fal --mode text-to-video --duration 15 --ratio 9:16 --resolution 720p
+plotloom video submit --repo ~/plotloom_repo/fake-heiress --episode ep001 --clip clip-01 --adapter volcengine-seedance --mode text-to-video --duration 15 --ratio 9:16 --resolution 720p
 plotloom video submit --repo ~/plotloom_repo/fake-heiress --episode ep001 --clip clip-01 --adapter volcengine-seedance --mode text-to-video --duration 15 --ratio 9:16 --resolution 720p
 
 plotloom video poll --repo ~/plotloom_repo/fake-heiress --episode ep001 --clip clip-01 --latest

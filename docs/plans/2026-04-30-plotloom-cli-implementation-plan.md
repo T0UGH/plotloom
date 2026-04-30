@@ -10,6 +10,8 @@
 
 ---
 
+> Post-cleanup note: repo-level `scripts/` compatibility helpers were removed on 2026-05-01. Use `plotloom init`, `plotloom validate`, `plotloom select`, `plotloom media`, `plotloom stitch`, and `plotloom video submit --adapter mock` instead.
+
 ## Source Documents
 
 Read these before starting:
@@ -18,10 +20,9 @@ Read these before starting:
 - `docs/design/2026-04-30-plotloom-cli-technical-design.md`
 - `docs/design/2026-04-30-plotloom-cli-command-surface.md`
 - `docs/design/2026-04-30-plotloom-cli-contract-details.md`
-- `adapters/codex.md`
-- `adapters/dreamina.md`
-- `adapters/volcengine-seedance.md`
-- Existing helper scripts: `scripts/init_series.py`, `scripts/validate_repo.py`, `scripts/select_candidate.py`, `scripts/ffprobe_media.py`, `scripts/stitch_ffmpeg.py`, `scripts/adapters/fake_video.py`
+- `docs/adapters/codex-app-server.md`
+- `docs/adapters/dreamina-cli.md`
+- `docs/adapters/volcengine-seedance.md`
 
 ## Non-Negotiable Boundaries
 
@@ -32,7 +33,7 @@ Read these before starting:
 - Do not print or persist secrets. Show only `present/absent` and `credential_source`.
 - Use TOML for first-party structured artifacts. Do not write persistent JSON/YAML repo artifacts.
 - Store receipts under `episodes/<ep>/videos/<clip>/tasks/*.toml`; `latest-task.toml` is only a pointer.
-- Keep `scripts/` working as compatibility helpers; CLI can share code but should live in `plotloom/`.
+- Do not keep repo-level compatibility scripts. The installed `plotloom` CLI is the only supported deterministic entrypoint.
 
 ## Task 1: Python Package Skeleton And Tooling
 

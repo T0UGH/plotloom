@@ -1,5 +1,7 @@
 # fal / HappyHorse Adapter Notes
 
+> Archived: this adapter is not implemented in the current Plotloom CLI. The active video adapters are `dreamina-cli`, `volcengine-seedance`, and local `mock`.
+
 ## Purpose
 
 Document how Plotloom should call HappyHorse through fal.ai. This is an adapter contract, not core product logic.

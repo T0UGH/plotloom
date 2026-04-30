@@ -1,5 +1,7 @@
 # Plotloom MVP Implementation Plan
 
+> Archived: this was the pre-CLI MVP implementation plan. It mentions repo-level Python scripts because those existed at the time; current supported deterministic entrypoint is the `plotloom` CLI.
+
 > **For Hermes / Superpowers:** Use `subagent-driven-development` to execute this plan task-by-task. Keep the implementation prompt-first: write `SKILL.md`, references, templates, and acceptance examples before writing scripts. Do not build a runtime.
 
 **Goal:** Build a minimal Plotloom skill pack that can take a short-drama idea into a first-episode production package, generate/accept video candidates, and stitch selected clips into `final.mp4`.
@@ -750,7 +752,7 @@ git commit -m "feat: add ffmpeg stitch helper"
 **Objective:** Document how Plotloom expects image generation to be invoked without binding core to Codex internals.
 
 **Files:**
-- Create: `adapters/codex.md`
+- Create: `docs/adapters/codex-app-server.md`
 
 **Content Requirements:**
 
@@ -764,13 +766,13 @@ git commit -m "feat: add ffmpeg stitch helper"
 **Verification:**
 
 ```bash
-grep -n "character-grid.png\|dry-run\|output path" adapters/codex.md
+grep -n "character-grid.png\|dry-run\|output path" docs/adapters/codex-app-server.md
 ```
 
 **Commit:**
 
 ```bash
-git add adapters/codex.md
+git add docs/adapters/codex-app-server.md
 git commit -m "docs: add Codex image adapter notes"
 ```
 
@@ -781,7 +783,7 @@ git commit -m "docs: add Codex image adapter notes"
 **Objective:** Document verified Dreamina CLI behavior and MVP constraints.
 
 **Files:**
-- Create: `adapters/dreamina.md`
+- Create: `docs/adapters/dreamina-cli.md`
 
 **Content Requirements:**
 
@@ -802,13 +804,13 @@ query_result supports --download_dir
 **Verification:**
 
 ```bash
-grep -n "maestro\|query_result\|download_dir\|no --poll" adapters/dreamina.md
+grep -n "maestro\|query_result\|download_dir\|no --poll" docs/adapters/dreamina-cli.md
 ```
 
 **Commit:**
 
 ```bash
-git add adapters/dreamina.md
+git add docs/adapters/dreamina-cli.md
 git commit -m "docs: add Dreamina adapter notes"
 ```
 
@@ -819,9 +821,9 @@ git commit -m "docs: add Dreamina adapter notes"
 **Objective:** Add thin install/use notes for Hermes, Claude Code, Codex, and OpenCode.
 
 **Files:**
-- Create: `adapters/hermes.md`
-- Create: `adapters/claude-code.md`
-- Create: `adapters/opencode.md`
+- Create: `docs/hosts/hermes.md`
+- Create: `docs/hosts/claude-code.md`
+- Create: `docs/hosts/opencode.md`
 
 **Content Requirements:**
 
@@ -835,13 +837,13 @@ Each file should explain:
 **Verification:**
 
 ```bash
-grep -R "do not duplicate\|skills/" adapters/hermes.md adapters/claude-code.md adapters/opencode.md
+grep -R "do not duplicate\|skills/" docs/hosts/hermes.md docs/hosts/claude-code.md docs/hosts/opencode.md
 ```
 
 **Commit:**
 
 ```bash
-git add adapters/hermes.md adapters/claude-code.md adapters/opencode.md
+git add docs/hosts/hermes.md docs/hosts/claude-code.md docs/hosts/opencode.md
 git commit -m "docs: add Plotloom host adapter notes"
 ```
 
