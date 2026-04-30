@@ -31,10 +31,12 @@ def _attempted_command(args: list[str]) -> str:
         "--adapter",
         "--audio",
         "--clip",
+        "--character",
         "--config",
         "--duration",
         "--duration-tolerance",
         "--episode",
+        "--file",
         "--fps",
         "--kind",
         "--mode",
@@ -50,7 +52,7 @@ def _attempted_command(args: list[str]) -> str:
         "--timeout",
         "--title",
     }
-    flag_options = {"--json", "--quiet", "--dry-run", "-h", "--help"}
+    flag_options = {"--json", "--quiet", "--dry-run", "--candidate", "-h", "--help"}
     parts: list[str] = []
     skip_next = False
     for arg in args:
@@ -89,6 +91,10 @@ def _attempted_command(args: list[str]) -> str:
         if len(parts) > 1 and parts[1] in {"generate"}:
             return f"image.{parts[1]}"
         return "image"
+    if parts[0] == "asset":
+        if len(parts) > 1 and parts[1] in {"import", "info", "list"}:
+            return f"asset.{parts[1]}"
+        return "asset"
     if parts[0] == "video":
         if len(parts) > 1 and parts[1] in {"compare", "poll", "submit"}:
             return f"video.{parts[1]}"
@@ -189,6 +195,7 @@ def main(ctx: click.Context, repo: str | None, config_path: str | None, as_json:
 
 
 from plotloom.commands.config import config_group  # noqa: E402
+from plotloom.commands.asset import asset_group  # noqa: E402
 from plotloom.commands.image import image_group  # noqa: E402
 from plotloom.commands.media import media_group  # noqa: E402
 from plotloom.commands.prompt import prompt_group  # noqa: E402
@@ -197,6 +204,7 @@ from plotloom.commands.repos import repos_group  # noqa: E402
 from plotloom.commands.select import select_command  # noqa: E402
 from plotloom.commands.video import video_group  # noqa: E402
 
+main.add_command(asset_group)
 main.add_command(config_group)
 main.add_command(image_group)
 main.add_command(init_command)
