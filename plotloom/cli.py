@@ -230,3 +230,7 @@ main.add_command(select_command)
 main.add_command(stitch_group)
 main.add_command(validate_command)
 main.add_command(video_group)
+
+
+if __name__ == "__main__":
+    main()

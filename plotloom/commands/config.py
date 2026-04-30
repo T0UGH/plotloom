@@ -5,7 +5,6 @@ import shutil
 from typing import Any
 
 import click
-import tomli_w
 
 from plotloom.config import DEFAULT_TEMPLATE, load_config, permission_warning, resolve_config_path, write_default_config
 from plotloom.output import emit
@@ -35,6 +34,8 @@ def config_path(ctx: click.Context) -> None:
 @click.pass_context
 def config_init(ctx: click.Context, force: bool, print_template: bool) -> None:
     if print_template:
+        import tomli_w
+
         click.echo(tomli_w.dumps(DEFAULT_TEMPLATE))
         return
 

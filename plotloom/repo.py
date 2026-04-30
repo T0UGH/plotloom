@@ -7,8 +7,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import tomli_w
-
 from plotloom.toml_io import toml_str
 
 SAFE_SLUG = re.compile(r"^[a-z0-9][a-z0-9-]*$")
@@ -107,6 +105,8 @@ def write_registry(registry: Path, repos: list[dict[str, Any]]) -> None:
             entry["path"] = str(entry["path"])
         serializable_repos.append(entry)
     try:
+        import tomli_w
+
         registry.write_text(tomli_w.dumps({"repos": serializable_repos}), encoding="utf-8")
     except OSError as error:
         raise RegistryError(f"could not write registry: {registry}") from error

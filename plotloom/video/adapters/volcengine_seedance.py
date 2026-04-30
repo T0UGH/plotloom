@@ -3,8 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import requests
-
 from plotloom.video.adapters.base import VideoSubmitResult, VideoTaskStatus
 from plotloom.video.capabilities import capabilities_for, validate_request
 from plotloom.video.types import PlotloomVideoRequest
@@ -21,13 +19,13 @@ class VolcEngineSeedanceAdapter:
     def __init__(
         self,
         *,
-        http: Any = requests,
+        http: Any | None = None,
         ark_api_key: str,
         base_url: str = DEFAULT_BASE_URL,
         model: str = DEFAULT_MODEL,
         timeout: int = 600,
     ) -> None:
-        self.http = http
+        self.http = http or _requests()
         self.ark_api_key = ark_api_key
         self.base_url = base_url.rstrip("/")
         self.model = model
@@ -126,6 +124,12 @@ def _content(
     if reference_audio:
         content.append({"type": "audio_url", "audio_url": {"url": reference_audio}, "role": "reference_audio"})
     return content
+
+
+def _requests() -> Any:
+    import requests
+
+    return requests
 
 
 def _json(response: Any) -> dict[str, Any]:

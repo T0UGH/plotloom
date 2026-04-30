@@ -7,8 +7,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import tomli_w
-
 from plotloom.errors import ConfigError
 
 DEFAULT_CONFIG_PATH = Path("~/.plotloom/.env.toml")
@@ -118,6 +116,8 @@ def write_default_config(path: Path, *, force: bool = False) -> None:
         path.chmod(0o600)
         return
     path.parent.mkdir(parents=True, exist_ok=True)
+    import tomli_w
+
     path.write_text(tomli_w.dumps(DEFAULT_TEMPLATE), encoding="utf-8")
     path.chmod(0o600)
 

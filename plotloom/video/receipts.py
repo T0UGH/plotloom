@@ -5,8 +5,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import tomli_w
-
 
 def _local_iso_now() -> str:
     return datetime.now().isoformat(timespec="seconds")
@@ -81,6 +79,8 @@ def _receipt_data(receipt: Receipt) -> dict[str, Any]:
 def write_receipt(path: str | Path, receipt: Receipt) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    import tomli_w
+
     path.write_text(tomli_w.dumps(_receipt_data(receipt)), encoding="utf-8")
 
 
@@ -96,4 +96,6 @@ def write_latest_pointer(path: str | Path, receipt: Receipt) -> None:
         "status": receipt.status,
         "updated_at": receipt.updated_at,
     }
+    import tomli_w
+
     latest.write_text(tomli_w.dumps(data), encoding="utf-8")
