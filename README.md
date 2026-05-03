@@ -150,12 +150,13 @@ Plotloom 的推荐用法是让 Agent 按阶段调用 skills，而不是一次性
 推荐顺序：
 
 ```text
-1. plotloom-series-brainstorming      -> 先 brainstorm 对齐系列方向，再稳定角色和视觉锚点
-2. plotloom-episode-card      -> 定义单集 hook、反转、cliffhanger
-3. plotloom-shot-prompts      -> 生成连续视频 prompt
-4. plotloom-video-adapter     -> 提交 mock / Dreamina / Seedance 候选视频
-5. plotloom-asset-selection   -> accept、reroll 或 revise_prompt
-6. plotloom-stitch-deliver    -> 拼接 selected clips 并准备交付
+1. plotloom-series-brainstorming       -> 先 brainstorm 对齐系列方向，再稳定角色和视觉锚点
+2. plotloom-character-reference-sheet  -> 生成生产级角色设定图 brief/prompt/reference-sheet
+3. plotloom-episode-card               -> 定义单集 hook、反转、cliffhanger
+4. plotloom-shot-prompts               -> 生成连续视频 prompt
+5. plotloom-video-adapter              -> 提交 mock / Dreamina / Seedance 候选视频
+6. plotloom-asset-selection            -> accept、reroll 或 revise_prompt
+7. plotloom-stitch-deliver             -> 拼接 selected clips 并准备交付
 ```
 
 ### Skills 清单
@@ -163,6 +164,7 @@ Plotloom 的推荐用法是让 Agent 按阶段调用 skills，而不是一次性
 | Skill | 说明 |
 |-------|------|
 | `plotloom-series-brainstorming` | 用启发式讨论收敛系列方向，并创建或更新 `series.md`、`characters.md` |
+| `plotloom-character-reference-sheet` | 生成生产级角色设定图 brief/prompt：转面、色板、表情、微表情、服装、道具和手势 |
 | `plotloom-episode-card` | 为单集生成轻量 episode intent card |
 | `plotloom-shot-prompts` | 生成适合 Seedance/Dreamina 的连续视频 prompt |
 | `plotloom-video-adapter` | 提交或轮询 mock、Dreamina、VolcEngine 视频任务 |

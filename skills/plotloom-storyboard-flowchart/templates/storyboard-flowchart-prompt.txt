@@ -1,0 +1,68 @@
+Create a 16:9 black-background Chinese storyboard flowchart sheet in the style of a professional short-video production table. Use a dark UI-like grid, thin white/gray table lines, numbered shot rows, dense but readable production-note columns, cinematic still frames embedded in the center column, compact technical notes on the right, and small footer blocks for production info. Do not copy any watermark, account name, social handle, app UI text, or logo from a reference image. No logos, no watermark.
+
+Title in top-left Chinese: `<TITLE>`
+Subtitle small: `片名：<PROJECT_NAME>`
+
+Layout:
+- `<ROW_COUNT>` horizontal rows numbered `<ROW_NUMBERS>`.
+- Total duration: `<TOTAL_DURATION>`.
+- Time blocks: `<TIME_BLOCKS>`.
+- Columns from left to right: `镜头号`, `时间`, `景别`, `画面内容`, `镜头方式（运镜）`, `表演调度 / 动作`, `台词 / 音乐`.
+- Footer sections: `摄影风格`, `剪辑节奏`, `动作设计`, `音效建议`, `时长（<TOTAL_DURATION>）`.
+- Optional right-side generic overlay icons: small white heart, comment bubble, star, and arrow icons. Keep them generic and non-branded.
+
+Visual style:
+- `<VISUAL_STYLE>`
+- `<LOCATION_AND_MOOD>`
+- Central image column contains cinematic illustrated stills, not flat comic panels.
+- High contrast, neat, readable Chinese text, professional production document feel.
+
+Characters:
+- `<CHARACTER_DESCRIPTION>`
+- Keep the same face, hair, wardrobe, and proportions across all rows.
+- Characters must be clearly adult when romance, flirting, or kissing appears.
+
+Face overlay:
+- `<FACE_OVERLAY_RULE>`
+
+Story rows:
+
+Row 1, time `<TIME_1>`, `<SHOT_1>`:
+Visual: `<VISUAL_1>`
+Camera: `<CAMERA_1>`
+Acting/action: `<ACTION_1>`
+Dialogue/sound: `<DIALOGUE_1>`
+
+Row 2, time `<TIME_2>`, `<SHOT_2>`:
+Visual: `<VISUAL_2>`
+Camera: `<CAMERA_2>`
+Acting/action: `<ACTION_2>`
+Dialogue/sound: `<DIALOGUE_2>`
+
+Row 3, time `<TIME_3>`, `<SHOT_3>`:
+Visual: `<VISUAL_3>`
+Camera: `<CAMERA_3>`
+Acting/action: `<ACTION_3>`
+Dialogue/sound: `<DIALOGUE_3>`
+
+Row 4, time `<TIME_4>`, `<SHOT_4>`:
+Visual: `<VISUAL_4>`
+Camera: `<CAMERA_4>`
+Acting/action: `<ACTION_4>`
+Dialogue/sound: `<DIALOGUE_4>`
+
+Row 5, time `<TIME_5>`, `<SHOT_5>`:
+Visual: `<VISUAL_5>`
+Camera: `<CAMERA_5>`
+Acting/action: `<ACTION_5>`
+Dialogue/sound: `<DIALOGUE_5>`
+
+Required prop rules:
+- `<PROP_RULES>`
+
+Negative rules:
+- No logos, no watermark, no copied account text, no social media handle.
+- No unintended English text.
+- No messy decorative labels.
+- Do not turn the storyboard into a poster, landing page, or comic page.
+- Keep all Chinese table text and dialogue short enough to read.

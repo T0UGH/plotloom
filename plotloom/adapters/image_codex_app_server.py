@@ -16,7 +16,7 @@ OUTPUT_SCHEMA = {
         "notes": {"type": "string"},
     },
     "required": ["image_path", "notes"],
-    "additionalProperties": True,
+    "additionalProperties": False,
 }
 
 
@@ -48,6 +48,10 @@ class CodexImageAdapter:
 
         with tempfile.NamedTemporaryFile("w+", suffix=".json", delete=False) as result_file:
             result_path = Path(result_file.name)
+        with tempfile.NamedTemporaryFile("w+", suffix=".schema.json", delete=False) as schema_file:
+            schema_path = Path(schema_file.name)
+            json.dump(OUTPUT_SCHEMA, schema_file)
+            schema_file.flush()
         try:
             args = [
                 codex_bin(self.codex_binary),
@@ -58,12 +62,26 @@ class CodexImageAdapter:
                 "--enable",
                 "image_generation",
                 "--output-schema",
-                json.dumps(OUTPUT_SCHEMA),
+                str(schema_path),
                 "--output-last-message",
                 str(result_path),
-                _build_prompt(prompt, input_images),
             ]
-            completed = subprocess.run(args, capture_output=True, text=True, timeout=timeout, check=False)
+            for image in input_images:
+                args.extend(["--image", str(image)])
+            args.append("-")
+            completed = subprocess.run(
+                args,
+                input=_build_prompt(prompt, input_images),
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                check=False,
+            )
+            if completed.returncode != 0:
+                raise RuntimeError(
+                    "codex image generation failed "
+                    f"with exit code {completed.returncode}: {completed.stderr.strip() or completed.stdout.strip()}"
+                )
             payload = _load_result(result_path, completed.stdout)
             source = _source_image(payload) or _newest_generated_image()
             if source is None:
@@ -80,6 +98,7 @@ class CodexImageAdapter:
             }
         finally:
             result_path.unlink(missing_ok=True)
+            schema_path.unlink(missing_ok=True)
 
 
 def _validate_image(path: Path) -> Path:
@@ -125,7 +144,12 @@ def _newest_generated_image() -> Path | None:
     generated = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser() / "generated_images"
     if not generated.exists():
         return None
-    candidates = [path for path in generated.iterdir() if path.is_file()]
+    image_exts = {".png", ".jpg", ".jpeg", ".webp"}
+    candidates = [
+        path
+        for path in generated.rglob("*")
+        if path.is_file() and path.suffix.lower() in image_exts and not path.name.startswith(".")
+    ]
     if not candidates:
         return None
     return max(candidates, key=lambda path: path.stat().st_mtime)
