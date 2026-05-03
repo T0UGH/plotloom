@@ -24,6 +24,7 @@ def image_group() -> None:
 @click.option("--episode")
 @click.option("--clip")
 @click.option("--prompt-file", required=True, type=click.Path(path_type=str))
+@click.option("--filename", help="Optional output filename/path relative to the image kind folder, e.g. reference-sheet/selected.png for cast images.")
 @click.option("--image", "images", multiple=True, type=click.Path(path_type=str))
 @click.option("--timeout", default=600, show_default=True, type=int)
 @click.pass_context
@@ -35,6 +36,7 @@ def generate_command(
     episode: str | None,
     clip: str | None,
     prompt_file: str,
+    filename: str | None,
     images: tuple[str, ...],
     timeout: int,
 ) -> None:
@@ -47,6 +49,7 @@ def generate_command(
             scene=scene,
             episode=episode,
             clip=clip,
+            filename=filename,
         )
     except ValueError as error:
         raise click.ClickException(str(error)) from error
