@@ -1,5 +1,12 @@
 # Plotloom
 
+[中文](README.md) | [English](README_EN.md)
+
+[![PyPI version](https://img.shields.io/pypi/v/plotloom.svg)](https://pypi.org/project/plotloom/)
+[![Python versions](https://img.shields.io/pypi/pyversions/plotloom.svg)](https://pypi.org/project/plotloom/)
+[![Top language](https://img.shields.io/github/languages/top/T0UGH/plotloom.svg)](https://github.com/T0UGH/plotloom)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 **AI 短剧生产 CLI | Agent-neutral Skills | Repo-first 工作流**
 
 Plotloom 是一套面向短剧生产的 CLI + Skills 工具箱。它不把创作过程藏进数据库、仪表盘或队列里，而是把每一步都落成可读、可提交、可复盘的系列仓库文件：`series.md`、`characters.md`、`video-prompts.md`、候选素材、`selected.mp4` 和最终交付物。
