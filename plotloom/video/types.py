@@ -34,6 +34,9 @@ class PlotloomVideoRequest:
     reference_images: list[Path] = field(default_factory=list)
     reference_videos: list[Path] = field(default_factory=list)
     source_video: Path | None = None
+    first_frame_uri: str | None = None
+    last_frame_uri: str | None = None
+    reference_image_uris: list[str] = field(default_factory=list)
     allow_downgrade: bool = False
     allow_normalize_duration: bool = False
 

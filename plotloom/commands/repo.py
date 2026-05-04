@@ -7,6 +7,8 @@ import click
 from plotloom.config import load_config
 from plotloom.output import emit
 from plotloom.repo import find_repo_from_cwd, init_repo, validate_repo
+from plotloom.assets import validate_canonical_cast_assets
+from plotloom.video.face_policy import validate_face_policies
 
 
 @click.command("init")
@@ -35,8 +37,17 @@ def init_command(ctx: click.Context, slug: str, title: str, path_value: str | No
 @click.option("--episode")
 @click.option("--require-prompts", is_flag=True)
 @click.option("--require-media", is_flag=True)
+@click.option("--face-policy", "check_face_policy", is_flag=True, help="Validate assets/cast/*/face-policy.toml.")
+@click.option("--canonical-assets", "check_canonical_assets", is_flag=True, help="Validate assets/cast/*/selected.png and metadata.toml.")
 @click.pass_context
-def validate_command(ctx: click.Context, episode: str | None, require_prompts: bool, require_media: bool) -> None:
+def validate_command(
+    ctx: click.Context,
+    episode: str | None,
+    require_prompts: bool,
+    require_media: bool,
+    check_face_policy: bool,
+    check_canonical_assets: bool,
+) -> None:
     repo_arg = ctx.obj.get("repo")
     discovered = find_repo_from_cwd(Path.cwd()) if not repo_arg else None
     if not repo_arg and discovered is None:
@@ -51,8 +62,36 @@ def validate_command(ctx: click.Context, episode: str | None, require_prompts: b
         raise click.ClickException(str(error)) from error
     if not result.ok:
         raise click.ClickException("missing required Plotloom paths:\n" + "\n".join(str(path) for path in result.missing))
+    face_policy = None
+    if check_face_policy:
+        face_policy = validate_face_policies(repo)
+        if not face_policy.ok:
+            messages = "\n".join(f"{issue.character}: {issue.message} ({issue.path})" for issue in face_policy.issues)
+            raise click.ClickException("face policy validation failed:\n" + messages)
+    canonical_asset_issues = []
+    if check_canonical_assets:
+        canonical_asset_issues = validate_canonical_cast_assets(repo)
+        if canonical_asset_issues:
+            messages = "\n".join(f"{issue.character}: {issue.message} ({issue.path})" for issue in canonical_asset_issues)
+            raise click.ClickException("canonical asset validation failed:\n" + messages)
 
     emit(
-        {"ok": True, "command": "repo.validate", "repo": str(repo), "message": "repo ok"},
+        {
+            "ok": True,
+            "command": "repo.validate",
+            "repo": str(repo),
+            "face_policy": {"checked": face_policy.checked, "issues": []} if face_policy else None,
+            "canonical_assets": {"issues": []} if check_canonical_assets else None,
+            "message": _validate_message(face_policy_checked=face_policy.checked if face_policy else None, canonical_assets=check_canonical_assets),
+        },
         as_json=ctx.obj.get("as_json"),
     )
+
+
+def _validate_message(*, face_policy_checked: int | None, canonical_assets: bool) -> str:
+    lines = ["repo ok"]
+    if face_policy_checked is not None:
+        lines.append(f"face policy ok: {face_policy_checked} checked")
+    if canonical_assets:
+        lines.append("canonical assets ok")
+    return "\n".join(lines)

@@ -24,6 +24,9 @@ STOP_MARKER = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 IMAGE_REFERENCE_MODES = {"image-to-video", "reference-to-video"}
+IMAGE_SLOT = re.compile(r"\b(?:Image|image|图片)\s*(?P<slot>\d+)\b")
+SHOT_LIST_LINE = re.compile(r"^\s*(?:\d+[.)]|Shot\s+\d+|镜头\s*\d+)", re.IGNORECASE | re.MULTILINE)
+CJK_TEXT = re.compile(r"[\u4e00-\u9fff]")
 
 
 @dataclass(frozen=True)
@@ -110,6 +113,23 @@ def compile_prompt(text: str, clip: str, adapter: str, mode: str) -> CompiledPro
         prompt_chars=len(prompt),
         warnings=warnings,
     )
+
+
+def lint_provider_prompt(prompt: str, *, reference_count: int | None = None) -> list[str]:
+    warnings: list[str] = []
+    slots = [int(match.group("slot")) for match in IMAGE_SLOT.finditer(prompt)]
+    if slots and reference_count is None:
+        warnings.append("prompt references Image slots but no reference map was provided")
+    elif slots and reference_count is not None and max(slots) > reference_count:
+        warnings.append(f"prompt references Image {max(slots)} but reference map has {reference_count} entries")
+
+    if CJK_TEXT.search(prompt):
+        warnings.append("prompt contains CJK text; provider video models may render unwanted subtitles or text")
+
+    shot_lines = SHOT_LIST_LINE.findall(prompt)
+    if len(shot_lines) >= 2:
+        warnings.append("prompt looks like a shot list; Seedance prompts should read as a continuous cinematic task")
+    return warnings
 
 
 def _prepend_instruction(prompt: str, instruction: str) -> str:

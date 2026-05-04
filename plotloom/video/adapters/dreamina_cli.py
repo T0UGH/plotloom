@@ -27,6 +27,28 @@ class DreaminaCliAdapter:
     def validate_request(self, request: PlotloomVideoRequest):
         return validate_request(request, self.capabilities())
 
+    def compile_native_request(self, request: PlotloomVideoRequest) -> dict[str, object]:
+        command = self._submit_command(request)
+        redacted: list[str] = []
+        skip_prompt = False
+        for arg in command:
+            if skip_prompt:
+                redacted.append("<compiled-prompt>")
+                skip_prompt = False
+                continue
+            redacted.append(arg)
+            if arg == "--prompt":
+                skip_prompt = True
+        return {
+            "adapter": self.name,
+            "provider": self.provider,
+            "mode": request.mode.value,
+            "binary": self.binary,
+            "command": redacted,
+            "model_version": self.model_version,
+            "prompt_chars": len(request.prompt_text),
+        }
+
     def submit(self, request: PlotloomVideoRequest, *, candidate_path: Path) -> VideoSubmitResult:
         command = self._submit_command(request)
         completed = subprocess.run(command, capture_output=True, text=True, check=False, env=self._env())

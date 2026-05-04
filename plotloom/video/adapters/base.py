@@ -14,6 +14,9 @@ class VideoSubmitResult:
     provider_task_id: str
     status: str
     local_path: Path | None = None
+    failure_category: str | None = None
+    failure_stage: str | None = None
+    retryable: bool | None = None
     raw: dict[str, Any] = field(default_factory=dict)
 
 
@@ -26,6 +29,9 @@ class VideoTaskStatus:
     local_path: Path | None = None
     error_code: str | None = None
     error_message: str | None = None
+    failure_category: str | None = None
+    failure_stage: str | None = None
+    retryable: bool | None = None
     raw: dict[str, Any] = field(default_factory=dict)
 
 
@@ -36,6 +42,8 @@ class VideoAdapter(Protocol):
     def capabilities(self) -> VideoAdapterCapabilities: ...
 
     def validate_request(self, request: PlotloomVideoRequest) -> ValidationResult: ...
+
+    def compile_native_request(self, request: PlotloomVideoRequest) -> dict[str, Any]: ...
 
     def submit(self, request: PlotloomVideoRequest, *, candidate_path: Path) -> VideoSubmitResult: ...
 

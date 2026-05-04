@@ -58,8 +58,14 @@ class Receipt:
     submitted_at: str = field(default_factory=_local_iso_now)
     updated_at: str = field(default_factory=_local_iso_now)
     candidate_path: str | None = None
+    reference_map_path: str | None = None
+    reference_intent: list[dict[str, Any]] = field(default_factory=list)
+    provider_request: dict[str, Any] = field(default_factory=dict)
     error_code: str | None = None
     error_message: str | None = None
+    failure_category: str | None = None
+    failure_stage: str | None = None
+    retryable: bool | None = None
     next_step: str | None = None
     provider_data: dict[str, Any] = field(default_factory=dict)
     media: dict[str, Any] = field(default_factory=dict)

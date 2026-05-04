@@ -37,24 +37,47 @@ def _attempted_command(args: list[str]) -> str:
         "--duration",
         "--duration-tolerance",
         "--episode",
+        "--explain-error",
         "--file",
+        "--face-blocked",
         "--fps",
+        "--first-frame",
         "--include-candidates",
         "--kind",
+        "--last-frame",
+        "--manifest",
         "--mode",
         "--output",
         "--path",
         "--prompt-file",
         "--ratio",
+        "--reference-image",
+        "--reference-map",
         "--repo",
         "--resolution",
+        "--reviewer",
         "--scene",
         "--status",
         "--task-id",
         "--timeout",
         "--title",
     }
-    flag_options = {"--json", "--quiet", "--dry-run", "--candidate", "--include-candidates", "-h", "--help"}
+    flag_options = {
+        "--json",
+        "--quiet",
+        "--dry-run",
+        "--candidate",
+        "--canonical-assets",
+        "--force",
+        "--include-candidates",
+        "--resume",
+        "--skip-existing",
+        "--strict-refs",
+        "--write-status",
+        "--no-write-status",
+        "-h",
+        "--help",
+    }
     parts: list[str] = []
     skip_next = False
     for arg in args:
@@ -86,17 +109,25 @@ def _attempted_command(args: list[str]) -> str:
             return f"media.{parts[1]}"
         return "media"
     if parts[0] == "prompt":
-        if len(parts) > 1 and parts[1] in {"check", "compile", "extract", "list"}:
+        if len(parts) > 1 and parts[1] in {"check", "compile", "extract", "list", "refs"}:
             return f"prompt.{parts[1]}"
         return "prompt"
     if parts[0] == "image":
-        if len(parts) > 1 and parts[1] in {"generate"}:
+        if len(parts) > 1 and parts[1] in {"batch", "generate"}:
             return f"image.{parts[1]}"
         return "image"
     if parts[0] == "asset":
-        if len(parts) > 1 and parts[1] in {"import", "info", "list"}:
+        if len(parts) > 1 and parts[1] in {"import", "info", "list", "select"}:
             return f"asset.{parts[1]}"
         return "asset"
+    if parts[0] == "face":
+        if len(parts) > 1 and parts[1] in {"policy", "smoke-prompt"}:
+            return f"face.{parts[1]}"
+        return "face"
+    if parts[0] == "review":
+        if len(parts) > 1 and parts[1] in {"contact-sheet"}:
+            return f"review.{parts[1]}"
+        return "review"
     if parts[0] == "delivery":
         if len(parts) > 1 and parts[1] in {"files", "summary"}:
             return f"delivery.{parts[1]}"
@@ -106,7 +137,7 @@ def _attempted_command(args: list[str]) -> str:
             return "stitch.plan"
         return "stitch"
     if parts[0] == "video":
-        if len(parts) > 1 and parts[1] in {"compare", "poll", "submit"}:
+        if len(parts) > 1 and parts[1] in {"compare", "plan-references", "poll", "submit"}:
             return f"video.{parts[1]}"
         return "video"
     if parts[0] == "youtube":
@@ -212,11 +243,13 @@ from plotloom.commands.config import config_group  # noqa: E402
 from plotloom.commands.asset import asset_group  # noqa: E402
 from plotloom.commands.delivery import delivery_group  # noqa: E402
 from plotloom.commands.doctor import doctor_command  # noqa: E402
+from plotloom.commands.face import face_group  # noqa: E402
 from plotloom.commands.image import image_group  # noqa: E402
 from plotloom.commands.media import media_group  # noqa: E402
 from plotloom.commands.prompt import prompt_group  # noqa: E402
 from plotloom.commands.repo import init_command, validate_command  # noqa: E402
 from plotloom.commands.repos import repos_group  # noqa: E402
+from plotloom.commands.review import review_group  # noqa: E402
 from plotloom.commands.select import select_command  # noqa: E402
 from plotloom.commands.stitch import stitch_group  # noqa: E402
 from plotloom.commands.video import video_group  # noqa: E402
@@ -226,11 +259,13 @@ main.add_command(asset_group)
 main.add_command(config_group)
 main.add_command(delivery_group)
 main.add_command(doctor_command)
+main.add_command(face_group)
 main.add_command(image_group)
 main.add_command(init_command)
 main.add_command(media_group)
 main.add_command(prompt_group)
 main.add_command(repos_group)
+main.add_command(review_group)
 main.add_command(select_command)
 main.add_command(stitch_group)
 main.add_command(validate_command)

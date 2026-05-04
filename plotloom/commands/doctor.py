@@ -5,6 +5,7 @@ import click
 from plotloom.config import load_config, permission_warning
 from plotloom.doctor import binary_status, import_status, redact_present
 from plotloom.output import emit
+from plotloom.video.failures import explain_provider_error
 
 ADAPTERS = ("codex-app-server", "dreamina-cli", "volcengine-seedance")
 
@@ -12,8 +13,21 @@ ADAPTERS = ("codex-app-server", "dreamina-cli", "volcengine-seedance")
 @click.command("doctor")
 @click.option("--adapter", type=click.Choice((*ADAPTERS, "all")), default="all", show_default=True)
 @click.option("--deep", is_flag=True)
+@click.option("--explain-error", help="Explain a provider error code or message without calling the provider.")
 @click.pass_context
-def doctor_command(ctx: click.Context, adapter: str, deep: bool) -> None:
+def doctor_command(ctx: click.Context, adapter: str, deep: bool, explain_error: str | None) -> None:
+    if explain_error:
+        explanation = explain_provider_error(explain_error)
+        emit(
+            {
+                "ok": True,
+                "command": "doctor.explain-error",
+                "error": explanation,
+                "message": _explain_message(explanation),
+            },
+            as_json=ctx.obj.get("as_json"),
+        )
+        return
     cfg = load_config(ctx.obj.get("config_path"))
     warning = permission_warning(cfg.path)
     checks: dict[str, object] = {"config": {"path": str(cfg.path), "permission": "warning" if warning else "ok"}}
@@ -66,3 +80,14 @@ def _has_failure(checks: dict[str, object]) -> bool:
             if _has_failure(value):
                 return True
     return False
+
+
+def _explain_message(explanation: dict[str, object]) -> str:
+    return "\n".join(
+        [
+            f"category: {explanation['category']}",
+            f"retryable: {explanation['retryable']}",
+            f"likely cause: {explanation['likely_cause']}",
+            f"next step: {explanation['next_step']}",
+        ]
+    )

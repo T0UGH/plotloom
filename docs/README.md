@@ -17,6 +17,7 @@ All project documents live under `docs/`. Root-level documentation should stay l
 ## Runbooks
 
 - [Provider smoke runbook](./runbooks/plotloom-provider-smoke.md)
+- [Reference map and face policy runbook](./runbooks/reference-face-policy.md)
 
 ## Archived Adapter Drafts
 

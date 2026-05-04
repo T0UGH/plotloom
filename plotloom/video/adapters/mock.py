@@ -18,6 +18,17 @@ class MockVideoAdapter:
     def validate_request(self, request: PlotloomVideoRequest):
         return validate_request(request, self.capabilities())
 
+    def compile_native_request(self, request: PlotloomVideoRequest) -> dict[str, object]:
+        return {
+            "adapter": self.name,
+            "provider": self.provider,
+            "mode": request.mode.value,
+            "duration": request.duration,
+            "ratio": request.ratio,
+            "resolution": request.resolution,
+            "artifact": "local fixture or placeholder",
+        }
+
     def submit(self, request: PlotloomVideoRequest, *, candidate_path: Path) -> VideoSubmitResult:
         candidate_path.parent.mkdir(parents=True, exist_ok=True)
         fixture = Path(__file__).resolve().parents[3] / "examples" / "fixtures" / "fake-video.mp4"

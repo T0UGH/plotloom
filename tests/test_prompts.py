@@ -4,7 +4,7 @@ import json
 from click.testing import CliRunner
 
 from plotloom.cli import main
-from plotloom.prompts import compile_prompt, extract_clip_prompt, list_clips
+from plotloom.prompts import compile_prompt, extract_clip_prompt, lint_provider_prompt, list_clips
 
 
 PROMPTS = """
@@ -126,6 +126,69 @@ Reference images:
         assert "compiled prompt is empty" in str(error)
     else:
         raise AssertionError("empty prompt should fail")
+
+
+def test_lint_provider_prompt_reports_reference_and_shot_list_risks():
+    warnings = lint_provider_prompt("Shot 1: Image 2 enters.\nShot 2: 中文对白 appears.", reference_count=1)
+
+    assert "Image 2" in warnings[0]
+    assert any("CJK" in warning for warning in warnings)
+    assert any("shot list" in warning for warning in warnings)
+
+
+def test_prompt_check_lint_uses_reference_map(tmp_path):
+    repo = _repo_with_prompts(
+        tmp_path,
+        """
+## Clip 01
+Prompt string:
+Shot 1: Image 2 walks into frame.
+Shot 2: 中文对白 appears on screen.
+""",
+    )
+    reference = repo / "assets" / "cast" / "ethan" / "safe-face.png"
+    reference.parent.mkdir(parents=True)
+    reference.write_bytes(b"png")
+    plan = CliRunner().invoke(
+        main,
+        [
+            "--repo",
+            str(repo),
+            "video",
+            "plan-references",
+            "--episode",
+            "ep001",
+            "--clip",
+            "clip-01",
+            "--reference",
+            "character:ethan=assets/cast/ethan/safe-face.png",
+            "--write",
+        ],
+    )
+    assert plan.exit_code == 0
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "--json",
+            "--repo",
+            str(repo),
+            "prompt",
+            "check",
+            "--episode",
+            "ep001",
+            "--clip",
+            "clip-01",
+            "--reference-map",
+            "episodes/ep001/videos/clip-01/reference-map.toml",
+        ],
+    )
+
+    assert result.exit_code == 0
+    warnings = json.loads(result.output)["checks"]["clip-01"]["warnings"]
+    assert any("Image 2" in warning for warning in warnings)
+    assert any("CJK" in warning for warning in warnings)
+    assert any("shot list" in warning for warning in warnings)
 
 
 def test_prompt_list_command_json(tmp_path):

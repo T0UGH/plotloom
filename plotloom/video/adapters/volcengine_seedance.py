@@ -37,6 +37,22 @@ class VolcEngineSeedanceAdapter:
     def validate_request(self, request: PlotloomVideoRequest):
         return validate_request(request, self.capabilities())
 
+    def compile_native_request(self, request: PlotloomVideoRequest) -> dict[str, Any]:
+        payload = {
+            "model": self.model,
+            "content": _summary_content(request),
+            "generate_audio": True,
+            "ratio": request.ratio,
+            "duration": request.duration,
+            "watermark": False,
+        }
+        return {
+            "adapter": self.name,
+            "provider": self.provider,
+            "endpoint": "/contents/generations/tasks",
+            "payload": payload,
+        }
+
     def submit(
         self,
         request: PlotloomVideoRequest,
@@ -54,6 +70,7 @@ class VolcEngineSeedanceAdapter:
             "model": self.model,
             "content": _content(
                 request.prompt_text,
+                image_inputs=_request_image_inputs(request),
                 reference_images=reference_images or [],
                 reference_videos=reference_videos or [],
                 reference_audio=reference_audio,
@@ -112,11 +129,14 @@ class VolcEngineSeedanceAdapter:
 def _content(
     prompt: str,
     *,
+    image_inputs: list[dict[str, str]] | None = None,
     reference_images: list[str],
     reference_videos: list[str],
     reference_audio: str | None,
 ) -> list[dict[str, Any]]:
     content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
+    for item in image_inputs or []:
+        content.append({"type": "image_url", "image_url": {"url": item["url"]}, "role": item["role"]})
     for url in reference_images:
         content.append({"type": "image_url", "image_url": {"url": url}, "role": "reference_image"})
     for url in reference_videos:
@@ -124,6 +144,24 @@ def _content(
     if reference_audio:
         content.append({"type": "audio_url", "audio_url": {"url": reference_audio}, "role": "reference_audio"})
     return content
+
+
+def _summary_content(request: PlotloomVideoRequest) -> list[dict[str, Any]]:
+    content: list[dict[str, Any]] = [{"type": "text", "role": "prompt", "text_chars": len(request.prompt_text)}]
+    for item in _request_image_inputs(request):
+        content.append({"type": "image_url", "image_url": {"url": item["url"]}, "role": item["role"]})
+    return content
+
+
+def _request_image_inputs(request: PlotloomVideoRequest) -> list[dict[str, str]]:
+    inputs: list[dict[str, str]] = []
+    if request.first_frame_uri:
+        inputs.append({"url": request.first_frame_uri, "role": "first_frame"})
+    for uri in request.reference_image_uris:
+        inputs.append({"url": uri, "role": "reference_image"})
+    if request.last_frame_uri:
+        inputs.append({"url": request.last_frame_uri, "role": "last_frame"})
+    return inputs
 
 
 def _requests() -> Any:

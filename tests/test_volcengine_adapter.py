@@ -37,6 +37,19 @@ def test_volcengine_submit_returns_task_id(tmp_path):
     assert http.post_headers["Authorization"] == "Bearer test-key"
 
 
+def test_volcengine_compile_native_request_summary_does_not_call_http(tmp_path):
+    http = FakeHTTP()
+    adapter = VolcEngineSeedanceAdapter(http=http, ark_api_key="test-key", model="doubao-seedance-2-0-260128")
+    req = _request(tmp_path)
+
+    summary = adapter.compile_native_request(req)
+
+    assert summary["provider"] == "volcengine"
+    assert summary["payload"]["model"] == "doubao-seedance-2-0-260128"
+    assert summary["payload"]["content"] == [{"type": "text", "role": "prompt", "text_chars": 6}]
+    assert not hasattr(http, "post_url")
+
+
 def test_volcengine_submit_includes_reference_media_urls(tmp_path):
     http = FakeHTTP()
     adapter = VolcEngineSeedanceAdapter(http=http, ark_api_key="test-key", model="doubao-seedance-2-0-260128")
