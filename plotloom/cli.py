@@ -109,6 +109,10 @@ def _attempted_command(args: list[str]) -> str:
         if len(parts) > 1 and parts[1] in {"compare", "poll", "submit"}:
             return f"video.{parts[1]}"
         return "video"
+    if parts[0] == "youtube":
+        if len(parts) > 1 and parts[1] in {"auth", "upload"}:
+            return f"youtube.{parts[1]}"
+        return "youtube"
     if parts[0] in {"init", "validate"}:
         return f"repo.{parts[0]}"
     return parts[0]
@@ -216,6 +220,7 @@ from plotloom.commands.repos import repos_group  # noqa: E402
 from plotloom.commands.select import select_command  # noqa: E402
 from plotloom.commands.stitch import stitch_group  # noqa: E402
 from plotloom.commands.video import video_group  # noqa: E402
+from plotloom.commands.youtube import youtube_group  # noqa: E402
 
 main.add_command(asset_group)
 main.add_command(config_group)
@@ -230,6 +235,7 @@ main.add_command(select_command)
 main.add_command(stitch_group)
 main.add_command(validate_command)
 main.add_command(video_group)
+main.add_command(youtube_group)
 
 
 if __name__ == "__main__":

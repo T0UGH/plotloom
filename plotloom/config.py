@@ -21,6 +21,9 @@ ENV_MAP = {
     ("adapters.volcengine-seedance", "ark_api_key"): "ARK_API_KEY",
     ("adapters.volcengine-seedance", "base_url"): "PLOTLOOM_VOLCENGINE_BASE_URL",
     ("adapters.volcengine-seedance", "model"): "PLOTLOOM_VOLCENGINE_MODEL",
+    ("adapters.youtube-shorts", "client_secrets_file"): "YOUTUBE_CLIENT_SECRETS_FILE",
+    ("adapters.youtube-shorts", "credentials_file"): "YOUTUBE_CREDENTIALS_FILE",
+    ("adapters.youtube-shorts", "default_privacy"): "YOUTUBE_DEFAULT_PRIVACY",
 }
 
 DEFAULT_TEMPLATE = {
@@ -39,6 +42,12 @@ DEFAULT_TEMPLATE = {
             "base_url": "https://ark.cn-beijing.volces.com/api/v3",
             "model": "doubao-seedance-2-0-260128",
             "default_resolution": "720p",
+        },
+        "youtube-shorts": {
+            "enabled": True,
+            "client_secrets_file": "~/.plotloom/youtube-client-secrets.json",
+            "credentials_file": "~/.plotloom/youtube-credentials.json",
+            "default_privacy": "public",
         },
     },
 }
