@@ -48,6 +48,7 @@ def _attempted_command(args: list[str]) -> str:
         "--manifest",
         "--mode",
         "--output",
+        "--output-dir",
         "--path",
         "--prompt-file",
         "--ratio",
@@ -56,6 +57,7 @@ def _attempted_command(args: list[str]) -> str:
         "--repo",
         "--resolution",
         "--reviewer",
+        "--reason",
         "--scene",
         "--status",
         "--task-id",
@@ -68,12 +70,14 @@ def _attempted_command(args: list[str]) -> str:
         "--dry-run",
         "--candidate",
         "--canonical-assets",
+        "--extract-frames",
         "--force",
         "--include-candidates",
         "--resume",
         "--skip-existing",
         "--strict-refs",
         "--write-status",
+        "--no-extract-frames",
         "--no-write-status",
         "-h",
         "--help",
@@ -125,7 +129,7 @@ def _attempted_command(args: list[str]) -> str:
             return f"face.{parts[1]}"
         return "face"
     if parts[0] == "review":
-        if len(parts) > 1 and parts[1] in {"contact-sheet"}:
+        if len(parts) > 1 and parts[1] in {"contact-sheet", "media", "write-note"}:
             return f"review.{parts[1]}"
         return "review"
     if parts[0] == "delivery":

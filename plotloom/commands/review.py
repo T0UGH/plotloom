@@ -8,6 +8,7 @@ import click
 
 from plotloom.output import emit
 from plotloom.repo import find_repo_from_cwd
+from plotloom.review_artifacts import create_media_review_artifacts
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 REVIEW_KINDS = ["scenes", "cast", "covers", "references"]
@@ -49,6 +50,105 @@ def contact_sheet_command(ctx: click.Context, episode: str | None, kind: str, ou
             "contact_sheet_path": str(output),
             "review_note_path": str(note_path),
             "message": f"review contact sheet: {output}\nreview note: {note_path}\ncandidates: {len(candidates)}",
+        },
+        as_json=ctx.obj.get("as_json"),
+    )
+
+
+@review_group.command("media")
+@click.option("--episode", required=True)
+@click.option("--clip", required=True)
+@click.option("--candidate", required=True, help="Candidate filename/stem/path, for example v001 or candidates/v001.mock.mp4.")
+@click.option("--output-dir", type=click.Path(path_type=str))
+@click.option("--reviewer", default="manual", show_default=True)
+@click.option("--extract-frames/--no-extract-frames", default=True, show_default=True)
+@click.pass_context
+def media_command(
+    ctx: click.Context,
+    episode: str,
+    clip: str,
+    candidate: str,
+    output_dir: str | None,
+    reviewer: str,
+    extract_frames: bool,
+) -> None:
+    repo = _repo_path(ctx)
+    candidate_path = _resolve_video_candidate(repo, episode=episode, clip=clip, candidate=candidate)
+    output = Path(output_dir).expanduser() if output_dir else repo / "episodes" / episode / "videos" / clip / "review" / candidate_path.stem
+    if not output.is_absolute():
+        output = repo / output
+    try:
+        result = create_media_review_artifacts(
+            candidate_path,
+            output,
+            repo=repo,
+            extract_first_frame=extract_frames,
+            extract_last_frame=extract_frames,
+            reviewer=reviewer,
+        )
+    except (OSError, ValueError) as error:
+        raise click.ClickException(str(error)) from error
+    emit(
+        {
+            "ok": True,
+            "command": "review.media",
+            "episode": episode,
+            "clip": clip,
+            "candidate_path": str(result.candidate_path),
+            "output_dir": str(result.output_dir),
+            "artifacts": result.artifacts,
+            "warnings": result.warnings,
+            "message": f"media review artifacts: {result.output_dir}",
+        },
+        as_json=ctx.obj.get("as_json"),
+    )
+
+
+@review_group.command("write-note")
+@click.option("--episode", required=True)
+@click.option("--clip", required=True)
+@click.option("--candidate", required=True)
+@click.option("--output-dir", type=click.Path(path_type=str))
+@click.option("--reviewer", default="manual", show_default=True)
+@click.pass_context
+def write_note_command(ctx: click.Context, episode: str, clip: str, candidate: str, output_dir: str | None, reviewer: str) -> None:
+    repo = _repo_path(ctx)
+    candidate_path = _resolve_video_candidate(repo, episode=episode, clip=clip, candidate=candidate)
+    output = Path(output_dir).expanduser() if output_dir else repo / "episodes" / episode / "videos" / clip / "review" / candidate_path.stem
+    if not output.is_absolute():
+        output = repo / output
+    output.mkdir(parents=True, exist_ok=True)
+    note = output / "REVIEW.md"
+    candidate_label = candidate_path.relative_to(repo).as_posix() if candidate_path.is_relative_to(repo) else str(candidate_path)
+    note.write_text(
+        "\n".join(
+            [
+                "# Media Review",
+                "",
+                f"- candidate: `{candidate_label}`",
+                f"- generated_at: {datetime.now().isoformat(timespec='seconds')}",
+                f"- reviewer: {reviewer}",
+                "",
+                "## QA checklist",
+                "",
+                "- refs used: pending",
+                "- identity consistency: pending",
+                "- face visible: pending",
+                "- story beat clear: pending",
+                "- subtitle/watermark/text artifacts: pending",
+                "- aspect ratio / crop / black frames: pending",
+                "- decision: selected/reroll/revise_prompt/ask_user",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    emit(
+        {
+            "ok": True,
+            "command": "review.write-note",
+            "review_note_path": str(note),
+            "message": f"review note: {note}",
         },
         as_json=ctx.obj.get("as_json"),
     )
@@ -161,6 +261,24 @@ def _write_review_note(note_path: Path, repo: Path, candidates: list[Path], *, e
 
 def _relative_href(base: Path, target: Path) -> str:
     return target.resolve().relative_to(base.resolve()).as_posix() if target.resolve().is_relative_to(base.resolve()) else target.resolve().as_uri()
+
+
+def _resolve_video_candidate(repo: Path, *, episode: str, clip: str, candidate: str) -> Path:
+    raw = Path(candidate).expanduser()
+    if raw.is_absolute():
+        if raw.is_file():
+            return raw.resolve()
+        raise click.ClickException(f"candidate not found: {raw}")
+    direct = repo / raw
+    if direct.is_file():
+        return direct.resolve()
+    candidates_dir = repo / "episodes" / episode / "videos" / clip / "candidates"
+    matches = sorted(path for path in candidates_dir.glob(f"{candidate}*") if path.is_file())
+    if len(matches) == 1:
+        return matches[0].resolve()
+    if not matches:
+        raise click.ClickException(f"candidate not found: {candidate}")
+    raise click.ClickException(f"candidate is ambiguous: {candidate}")
 
 
 def _repo_path(ctx: click.Context) -> Path:

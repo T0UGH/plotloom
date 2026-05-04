@@ -143,10 +143,12 @@ def compile_command(
         "mode": mode,
         "prompt_file": str(path),
         "prompt_text": compiled.prompt_text,
+        "source_prompt_sha256": compiled.source_prompt_sha256,
         "sha256": compiled.sha256,
         "prompt_sha256": compiled.prompt_sha256,
         "prompt_chars": compiled.prompt_chars,
         "warnings": [*compiled.warnings, *lint_warnings],
+        "qa_checklist": compiled.qa_checklist,
         "message": compiled.prompt_text,
     }
     if output_path:
@@ -200,9 +202,11 @@ def check_command(
             checks[clip_name] = {
                 "ok": False,
                 "sha256": compiled.sha256,
+                "source_prompt_sha256": compiled.source_prompt_sha256,
                 "prompt_sha256": compiled.prompt_sha256,
                 "prompt_chars": compiled.prompt_chars,
                 "warnings": compiled.warnings,
+                "qa_checklist": compiled.qa_checklist,
                 "error": error.message,
             }
             continue
@@ -212,18 +216,22 @@ def check_command(
             checks[clip_name] = {
                 "ok": False,
                 "sha256": compiled.sha256,
+                "source_prompt_sha256": compiled.source_prompt_sha256,
                 "prompt_sha256": compiled.prompt_sha256,
                 "prompt_chars": compiled.prompt_chars,
                 "warnings": [*compiled.warnings, *lint_warnings],
+                "qa_checklist": compiled.qa_checklist,
                 "error": "strict refs failed: " + "; ".join(strict_warnings),
             }
             continue
         checks[clip_name] = {
             "ok": True,
             "sha256": compiled.sha256,
+            "source_prompt_sha256": compiled.source_prompt_sha256,
             "prompt_sha256": compiled.prompt_sha256,
             "prompt_chars": compiled.prompt_chars,
             "warnings": [*compiled.warnings, *lint_warnings],
+            "qa_checklist": compiled.qa_checklist,
         }
 
     emit(
@@ -275,7 +283,7 @@ def _lint_warnings(ctx: click.Context, prompt: str, *, reference_map: str | None
             reference_count = len(read_reference_map(path.resolve(), _repo_path(ctx)))
         except (FileNotFoundError, ValueError, OSError) as error:
             raise click.ClickException(str(error)) from error
-    return lint_provider_prompt(prompt, reference_count=reference_count)
+    return lint_provider_prompt(prompt, reference_count=reference_count, require_handoff=run_lint)
 
 
 def _strict_ref_warnings(warnings: list[str]) -> list[str]:

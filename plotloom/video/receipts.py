@@ -54,6 +54,7 @@ class Receipt:
     resolution: str
     audio_intent: str
     credential_source: str
+    source_prompt_sha256: str | None = None
     receipt_version: int = 1
     submitted_at: str = field(default_factory=_local_iso_now)
     updated_at: str = field(default_factory=_local_iso_now)
@@ -61,6 +62,10 @@ class Receipt:
     reference_map_path: str | None = None
     reference_intent: list[dict[str, Any]] = field(default_factory=list)
     provider_request: dict[str, Any] = field(default_factory=dict)
+    qa_checklist: list[str] = field(default_factory=list)
+    cost: dict[str, Any] = field(default_factory=dict)
+    timing: dict[str, Any] = field(default_factory=dict)
+    selection: dict[str, Any] = field(default_factory=dict)
     error_code: str | None = None
     error_message: str | None = None
     failure_category: str | None = None

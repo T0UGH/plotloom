@@ -282,3 +282,46 @@ plotloom doctor --explain-error InputImageSensitiveContentDetected.PrivacyInform
 5. `review contact-sheet` + `review-note.md`。
 6. provider error taxonomy docs / doctor explain。
 7. 最后再做真实 provider refs payload 编译。
+
+## 8. Additional backlog decisions from knowledge-wiki
+
+来源：`/Users/haha/workspace/knowledge-wiki/wiki/projects/plotloom-optimization-backlog-from-session-recall.md`。
+
+吸收：
+
+1. Prompt compile layer：把创作源、provider-specific compiled prompt、QA checklist 拆清楚，并加强 lint。已落到 `compile_prompt` / `prompt compile/check`。
+2. Review media：补视频候选的 ffprobe、volumedetect、frame extraction、first/last frame evidence、`REVIEW.md`。已落到 `plotloom review media` / `plotloom review write-note`。
+3. Receipt audit fields：补 `source_prompt_sha256`、cost、queue time、provider timing、selection/rejection reason 等可复盘字段。已补 receipt schema 和 submit 写入。
+
+不吸收：
+
+1. Candidate/gacha automatic loop 不做。短剧生成抽卡成本高，Plotloom 只记录候选和 review/selection，不主动跑 N 次生成循环。
+2. 本地图片 Base64、上传、签名 URL 暂不做。
+3. Dreamina reference images 暂不做，除非确认 CLI 支持。
+
+可选吸收：
+
+1. First/last-frame continuity 可以做，但必须是 repo 配置显式开启的能力，不作为默认行为。
+2. 原因：上一条视频的 last frame 很容易截到人脸或不适合继续作为 reference，默认自动使用会放大隐私/身份漂移/构图污染风险。
+3. 建议 repo 配置：
+
+```toml
+[video.continuity]
+enabled = false
+extract_first_frame = false
+extract_last_frame = false
+auto_use_previous_last_frame = false
+```
+
+当 `video.continuity.enabled = true` 时，`select` 或后续 review/media 命令才可以写入：
+
+```text
+selected.mp4
+first-frame.jpg
+last-frame.jpg
+selected-note.md
+```
+
+即便开启，也不应默认把上一条 `last-frame.jpg` 自动传给 provider；应先作为 repo artifact，是否用于下一条 clip 由用户/agent 显式选择。
+
+实现状态：已支持 repo 配置读取，`plotloom select` 仅在 `video.continuity.enabled = true` 且对应 extract flag 开启时生成 continuity artifacts。`auto_use_previous_last_frame` 只记录配置，不会触发自动提交。
