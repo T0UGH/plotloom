@@ -157,6 +157,7 @@ Plotloom 的推荐用法是让 Agent 按阶段调用 skills，而不是一次性
 5. plotloom-video-adapter              -> 提交 mock / Dreamina / Seedance 候选视频
 6. plotloom-asset-selection            -> accept、reroll 或 revise_prompt
 7. plotloom-stitch-deliver             -> 拼接 selected clips 并准备交付
+8. plotloom-subtitle-burnin            -> 基于最终视频补英文/中文/双语字幕并烧录验证
 ```
 
 ### Skills 清单
@@ -170,6 +171,7 @@ Plotloom 的推荐用法是让 Agent 按阶段调用 skills，而不是一次性
 | `plotloom-video-adapter` | 提交或轮询 mock、Dreamina、VolcEngine 视频任务 |
 | `plotloom-asset-selection` | 审查候选素材并固化为 `selected.*` |
 | `plotloom-stitch-deliver` | 用本地媒体工具拼接 `final.mp4` 并整理交付文件 |
+| `plotloom-subtitle-burnin` | 基于最终成片生成英文/中文/双语字幕、烧录字幕并做解码和抽帧验证 |
 
 ## 支持的 Provider
 
