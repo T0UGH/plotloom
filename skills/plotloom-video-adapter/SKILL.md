@@ -41,6 +41,25 @@ Use when `episodes/epXXX/video-prompts.md` or `video-prompts-en.md` exists and a
 - Do not create a Python runtime client in the skill; keep this as a prompt and command contract plus the `plotloom` CLI.
 - Do not batch-generate three candidates in MVP.
 
+## Reference Discipline
+Reference handling is high risk. Do not assume that a local path written inside prompt prose is sent to the provider.
+
+Before any `image-to-video` or `reference-to-video` submission:
+1. Identify the exact intended first frame and reference images for this clip only.
+2. Verify those files or `asset://...` ids are the actual request inputs, not just Markdown text.
+3. Reject ambiguous phrasing such as `Use Image 1` unless the Image mapping has been programmatically resolved for the target clip.
+4. Record the submitted reference list in a visible receipt/handoff. If the CLI cannot show the actual refs, stop and add/patch the tool support before expensive generation.
+
+For VolcEngine/Seedance identity work:
+- Full character sheets may trigger `InputImageSensitiveContentDetected.PrivacyInformation`.
+- Transparent face mesh, red topology, blur, or privacy mesh are not reliable bypasses.
+- Prefer provider-approved `asset://...` virtual face anchors for faces, plus face-blocked costume/body sheets for clothing and silhouette.
+- Treat `asset://...` as face-only. Hats, wardrobe, body type, props, and scene blocking still need text or non-sensitive visual refs.
+- Face consistency smoke tests should start with medium close-up, front-left 3/4 face, visible eyes, no deep hat shadow, face occupying about 25-35% of frame, and minimal action.
+
+## Batch Safety
+For repeated candidate or asset generation, use a manifest/resume pattern: skip outputs that already exist unless `--force` is explicit, record per-item status, and continue after timeouts. Do not restart a batch from item 1 after one successful expensive generation.
+
 ## Stop Conditions
 Stop after candidate creation, queue note, or provider failure report. Do not select or stitch.
 
