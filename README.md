@@ -11,7 +11,7 @@ Plotloom 是一套面向短剧生产的 CLI + Skills 工具箱。它不把创作
 | 系列设定 | Plotloom skills 生成剧集设定、角色设定和 episode card |
 | 图片素材 | 本机 Codex image generation 能力，适合角色图、场景图、封面图 |
 | 视频生成 | Dreamina/即梦 CLI、VolcEngine Seedance 2.0、mock adapter |
-| 选择与交付 | 候选版本管理、`selected.*` 固化、ffmpeg/ffprobe 拼接检查 |
+| 选择与交付 | 候选版本管理、`selected.*` 固化、review artifact、ffmpeg/ffprobe 拼接检查 |
 
 > Plotloom 的重点不是“一键黑盒生成”，而是让 Agent 和人类可以围绕同一个 repo 协作，把短剧生产过程拆成清晰、可审查、可重跑的文件边界。
 
@@ -26,8 +26,11 @@ Plotloom 不是把一个想法直接丢给模型、等待黑盒产出成片。�
 - `series.md` / `characters.md`：系列长期记忆和角色一致性锚点。
 - `episode-card.md`：单集 hook、反转、情绪目标和 cliffhanger。
 - `video-prompts.md` / `video-prompts-en.md`：可提交给 Dreamina、Seedance 等模型的 clip 任务。
+- `reference-map.toml`：显式记录 first/last frame、角色、场景、道具等 reference intent。
 - `candidates/`：模型生成的多版本图片或视频素材。
 - `selected.*`：经过 review 后被接受的版本。
+- `tasks/*.toml`：provider 请求、任务状态、receipt、prompt hash 和 QA checklist。
+- `review/` / `selected-note.md`：候选审查材料、抽帧、媒体 facts 和选择原因。
 - `final.mp4`：由 selected clips 拼接出的最终交付视频。
 
 ## 推荐客户端
@@ -154,8 +157,8 @@ Plotloom 的推荐用法是让 Agent 按阶段调用 skills，而不是一次性
 2. plotloom-character-reference-sheet  -> 生成生产级角色设定图 brief/prompt/reference-sheet
 3. plotloom-episode-card               -> 定义单集 hook、反转、cliffhanger
 4. plotloom-shot-prompts               -> 生成连续视频 prompt
-5. plotloom-video-adapter              -> 提交 mock / Dreamina / Seedance 候选视频
-6. plotloom-asset-selection            -> accept、reroll 或 revise_prompt
+5. plotloom-video-adapter              -> 提交 mock / Dreamina / Seedance 候选视频，并记录 receipt
+6. plotloom-asset-selection            -> accept、review、reroll 或 revise_prompt
 7. plotloom-stitch-deliver             -> 拼接 selected clips 并准备交付
 8. plotloom-subtitle-burnin            -> 基于最终视频补英文/中文/双语字幕并烧录验证
 ```
@@ -168,8 +171,8 @@ Plotloom 的推荐用法是让 Agent 按阶段调用 skills，而不是一次性
 | `plotloom-character-reference-sheet` | 生成生产级角色设定图 brief/prompt：转面、色板、表情、微表情、服装、道具和手势 |
 | `plotloom-episode-card` | 为单集生成轻量 episode intent card |
 | `plotloom-shot-prompts` | 生成适合 Seedance/Dreamina 的连续视频 prompt |
-| `plotloom-video-adapter` | 提交或轮询 mock、Dreamina、VolcEngine 视频任务 |
-| `plotloom-asset-selection` | 审查候选素材并固化为 `selected.*` |
+| `plotloom-video-adapter` | 规划 reference map，提交或轮询 mock、Dreamina、VolcEngine 视频任务 |
+| `plotloom-asset-selection` | 审查候选素材并固化为 `selected.*`，可写入选择原因和 continuity artifacts |
 | `plotloom-stitch-deliver` | 用本地媒体工具拼接 `final.mp4` 并整理交付文件 |
 | `plotloom-subtitle-burnin` | 基于最终成片生成英文/中文/双语字幕、烧录字幕并做解码和抽帧验证 |
 
@@ -181,6 +184,7 @@ Plotloom 的推荐用法是让 Agent 按阶段调用 skills，而不是一次性
 | `codex-app-server` | 图片 | 角色、场景、封面、reference 图 | 依赖本机 Codex 和 image generation 能力 |
 | `dreamina-cli` | 视频 | Dreamina/即梦视频生成 | 依赖本机 Dreamina CLI 登录态 |
 | `volcengine-seedance` | 视频 | VolcEngine Ark Seedance 2.0 | 通过 Ark async task API 提交和轮询 |
+| `youtube-shorts` | 交付 | 上传最终短视频到 YouTube Shorts | 依赖本机 OAuth 凭证 |
 
 真实 provider 建议先跑 doctor，再做单条短 clip smoke：
 
@@ -203,21 +207,72 @@ Adapter and host notes are indexed in [docs/README.md](docs/README.md).
 | `plotloom repos` | 管理本机系列 repo registry |
 | `plotloom prompt` | 检查、提取、编译 episode prompt |
 | `plotloom image` | 生成并归档图片候选 |
-| `plotloom video` | 提交和轮询视频生成任务 |
+| `plotloom video` | 规划 references，提交、轮询和比较视频生成任务 |
 | `plotloom asset` | 导入和查看本地素材 |
-| `plotloom select` | 把候选素材复制为 `selected.*` |
+| `plotloom face` | 检查角色 face policy，并生成 provider smoke prompt |
+| `plotloom review` | 生成图片 contact sheet、视频 review artifact 和 selected note |
+| `plotloom select` | 把候选素材复制为 `selected.*`，可记录选择原因 |
 | `plotloom media` | 调用本地媒体工具 probe、check、normalize |
 | `plotloom stitch` | 规划或拼接 selected clips |
 | `plotloom delivery` | 汇总交付文件 |
+| `plotloom youtube` | OAuth 登录并上传 YouTube Shorts |
 | `plotloom doctor` | 检查本机 adapter、依赖和配置状态 |
 
 查看完整参数：
 
 ```bash
 plotloom --help
+plotloom prompt compile --help
+plotloom video plan-references --help
 plotloom video submit --help
 plotloom image generate --help
+plotloom review media --help
 ```
+
+## Reference、Prompt 和 Review 工作流
+
+生产场景建议显式拆开 reference intent、provider prompt、候选审查和选择结果：
+
+```bash
+# 为一个 clip 写入 reference-map.toml；路径是 repo 内相对路径或本地文件路径
+plotloom --repo . video plan-references \
+  --episode ep001 \
+  --clip clip-01 \
+  --first-frame assets/scenes/hotel-lobby/selected.png \
+  --reference "character:hero=assets/cast/hero/selected.png" \
+  --write
+
+# 编译 provider prompt，写出可审计文本，并附带 source_prompt_sha256 / qa_checklist
+plotloom --repo . prompt compile \
+  --episode ep001 \
+  --clip clip-01 \
+  --adapter volcengine-seedance \
+  --mode image-to-video \
+  --reference-map episodes/ep001/videos/clip-01/reference-map.toml \
+  --lint \
+  --output episodes/ep001/videos/clip-01/compiled-prompt.txt
+
+# 提交视频任务；reference-map 会进入请求摘要和 receipt，provider 是否支持取决于 adapter
+plotloom --repo . video submit \
+  --episode ep001 \
+  --clip clip-01 \
+  --adapter volcengine-seedance \
+  --mode image-to-video \
+  --reference-map episodes/ep001/videos/clip-01/reference-map.toml
+
+# 为候选视频生成 ffprobe、volumedetect、首尾帧和 REVIEW.md
+plotloom --repo . review media \
+  --episode ep001 \
+  --clip clip-01 \
+  --candidate v001
+
+# 接受候选，并记录人工选择原因
+plotloom --repo . select \
+  episodes/ep001/videos/clip-01/candidates/v001.mp4 \
+  --reason "identity and story beat passed"
+```
+
+`prompt check --strict-refs` 可以把 prompt 里的 `Image 1` / `Image 2` / `图片 1` 这类槽位和 `reference-map.toml` 对齐，不匹配时失败。Plotloom 不会默认自动生成大量候选版本；多候选探索需要人或上层 Agent 明确触发，避免无意消耗真实 provider 额度。
 
 ## 配置
 
@@ -259,6 +314,22 @@ ark_api_key = ""
 base_url = "https://ark.cn-beijing.volces.com/api/v3"
 model = "doubao-seedance-2-0-260128"
 default_resolution = "720p"
+
+[adapters.youtube-shorts]
+enabled = true
+client_secrets_file = "~/.plotloom/youtube-client-secrets.json"
+credentials_file = "~/.plotloom/youtube-credentials.json"
+default_privacy = "public"
+```
+
+系列 repo 自身的 `plotloom.toml` 也可以打开可选的视频 continuity artifact。默认关闭；开启后，`plotloom select` 会为 selected 视频抽取配置指定的首帧/尾帧并写入 `selected-note.md`，但不会自动把上一条 clip 的尾帧提交给 provider：
+
+```toml
+[video.continuity]
+enabled = true
+extract_first_frame = true
+extract_last_frame = true
+auto_use_previous_last_frame = false
 ```
 
 ### 环境变量覆盖
@@ -275,6 +346,9 @@ default_resolution = "720p"
 | `ARK_API_KEY` | VolcEngine Ark API Key |
 | `PLOTLOOM_VOLCENGINE_BASE_URL` | 覆盖 VolcEngine base URL |
 | `PLOTLOOM_VOLCENGINE_MODEL` | 覆盖 Seedance model |
+| `YOUTUBE_CLIENT_SECRETS_FILE` | 覆盖 YouTube OAuth client secrets 路径 |
+| `YOUTUBE_CREDENTIALS_FILE` | 覆盖 YouTube OAuth credentials 路径 |
+| `YOUTUBE_DEFAULT_PRIVACY` | 覆盖 YouTube 默认发布可见性 |
 
 配置优先级：
 
@@ -303,7 +377,10 @@ episodes/
       clip-01/
         candidates/
         tasks/
+        reference-map.toml
+        review/
         selected.mp4
+        selected-note.md
 outputs/
 ```
 
@@ -334,8 +411,8 @@ uv run pytest
 
 # 构建并检查包
 rm -rf dist build plotloom.egg-info
-uv run --isolated --with build --with twine python -m build
-uv run --isolated --with twine twine check dist/*
+uv build
+uv publish --dry-run --check-url https://pypi.org/simple/ dist/*
 ```
 
 发布新版本前需要先 bump `pyproject.toml` 里的版本号；PyPI 不允许覆盖已经发布的同名版本。
