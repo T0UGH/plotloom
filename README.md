@@ -3,8 +3,8 @@
 [中文](README.md) | [English](README_EN.md)
 
 [![PyPI version](https://img.shields.io/pypi/v/plotloom.svg)](https://pypi.org/project/plotloom/)
-[![Python versions](https://img.shields.io/pypi/pyversions/plotloom.svg)](https://pypi.org/project/plotloom/)
-[![Top language](https://img.shields.io/github/languages/top/T0UGH/plotloom.svg)](https://github.com/T0UGH/plotloom)
+[![Python](https://img.shields.io/badge/python-%3E%3D3.11-blue.svg)](pyproject.toml)
+[![Language](https://img.shields.io/badge/language-Python-blue.svg)](https://github.com/T0UGH/plotloom)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 **AI 短剧生产 CLI | Agent-neutral Skills | Repo-first 工作流**

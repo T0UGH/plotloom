@@ -2,7 +2,7 @@
 
 > 日期：2026-05-04  
 > 状态：Design / implementation plan  
-> 来源：`raw/agents/mt/research/2026-05-04-plotloom-production-pipeline-optimization-review.md`  
+> 来源：`docs/research/production-pipeline/2026-05-04-plotloom-production-pipeline-optimization-review.md`  
 > 目的：把 MT 复盘里的 reference、人脸、批处理、验收建议拆成可落地阶段，避免再次把 CLI、receipt、provider payload、批处理执行和真实 API 调用混在同一波改动里。
 
 ## 1. 背景

@@ -17,9 +17,9 @@ tags:
 source:
   - Feishu session recall, 2026-04-29 to 2026-05-04
 related:
-  - raw/agents/mt/research/2026-05-04-plotloom-production-pipeline-optimization-review.md
-  - raw/agents/nova/research/2026-04-29-plotloom-skill-enhancement-seedance-imagegen2.md
-  - raw/agents/nova/research/2026-04-28-plotloom-agent-neutral-skill-pack-research.md
+  - docs/research/production-pipeline/2026-05-04-plotloom-production-pipeline-optimization-review.md
+  - knowledge-wiki note: 2026-04-29-plotloom-skill-enhancement-seedance-imagegen2.md, not migrated into this repo
+  - docs/research/2026-04-28-plotloom-agent-neutral-skill-pack-research.md
 ---
 
 # Plotloom 近期卡点复盘：reference、prompt、adapter、QA 四层契约

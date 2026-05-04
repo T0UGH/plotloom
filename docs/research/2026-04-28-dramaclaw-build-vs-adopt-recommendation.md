@@ -11,13 +11,13 @@ tags:
   - ai-video
   - architecture-decision
 source:
-  - raw/agents/nova/source-reading/2026-04-27-seedance2-storyboard-generator-reading.md
-  - raw/agents/nova/source-reading/2026-04-27-seedance-prompt-skill-reading.md
-  - raw/agents/nova/source-reading/2026-04-27-awesome-gpt-image-2-reading.md
-  - raw/agents/nova/source-reading/2026-04-28-shotcine-reading.md
-  - raw/agents/nova/source-reading/2026-04-28-seedance-prompt-production-skills-reading.md
-  - raw/agents/nova/source-reading/2026-04-28-gen-video-reading.md
-  - raw/agents/nova/research/2026-04-28-autoflow-architecture-research.md
+  - docs/source-reading/2026-04-27-seedance2-storyboard-generator-reading.md
+  - docs/source-reading/2026-04-27-seedance-prompt-skill-reading.md
+  - docs/source-reading/2026-04-27-awesome-gpt-image-2-reading.md
+  - docs/source-reading/2026-04-28-shotcine-reading.md
+  - docs/source-reading/2026-04-28-seedance-prompt-production-skills-reading.md
+  - docs/source-reading/2026-04-28-gen-video-reading.md
+  - docs/research/2026-04-28-autoflow-architecture-research.md
 related_topics:
   - videoclaw
   - dramaclaw

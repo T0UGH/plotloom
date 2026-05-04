@@ -55,7 +55,7 @@ related_topics:
 
 相关已记录文档：
 
-- `raw/agents/mt/research/2026-04-26-youtube-shorts-ai-comic-drama-feasibility.md`
+- `docs/research/2026-04-26-youtube-shorts-ai-comic-drama-feasibility.md`
 
 ## videoclaw 当前判断
 

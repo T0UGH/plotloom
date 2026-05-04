@@ -1,6 +1,6 @@
 # Plotloom Docs
 
-All project documents live under `docs/`. Root-level documentation should stay limited to `README.md` and packaging metadata.
+All project documents live under `docs/`. Root-level documentation should stay limited to `README.md`, `README_EN.md`, `LICENSE`, and packaging metadata.
 
 ## Active Adapter Docs
 
@@ -18,6 +18,15 @@ All project documents live under `docs/`. Root-level documentation should stay l
 
 - [Provider smoke runbook](./runbooks/plotloom-provider-smoke.md)
 - [Reference map and face policy runbook](./runbooks/reference-face-policy.md)
+
+## Active Planning
+
+- [Plotloom reference / face policy TODO](./plans/todo.md)
+
+## Template Source
+
+- The canonical series repo template lives in `plotloom/templates/series-repo/`.
+- Generated media and local provider outputs should stay outside Git, or under an explicit example/docs path when they are intentionally curated.
 
 ## Archived Adapter Drafts
 
@@ -42,6 +51,11 @@ These documents were migrated from the local knowledge wiki into the public Plot
 - [2026-04-28-autoflow-architecture-research.md](./research/2026-04-28-autoflow-architecture-research.md)
 - [2026-04-28-plotloom-agent-neutral-skill-pack-research.md](./research/2026-04-28-plotloom-agent-neutral-skill-pack-research.md)
 - [2026-04-28-plotloom-mvp-artifact-contract-draft.md](./research/2026-04-28-plotloom-mvp-artifact-contract-draft.md)
+
+## Production Pipeline Notes
+
+- [2026-05-04-plotloom-iteration-issues-session-recall.md](./research/production-pipeline/2026-05-04-plotloom-iteration-issues-session-recall.md)
+- [2026-05-04-plotloom-production-pipeline-optimization-review.md](./research/production-pipeline/2026-05-04-plotloom-production-pipeline-optimization-review.md)
 
 ## Source reading
 

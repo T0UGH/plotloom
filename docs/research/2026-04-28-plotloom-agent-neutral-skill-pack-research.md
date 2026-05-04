@@ -19,8 +19,8 @@ source:
   - https://github.com/LeoYeAI/openclaw-master-skills
   - /Users/wangguiping/.hermes/profiles/nova/skills/autonomous-ai-agents/hermes-agent/SKILL.md
 related:
-  - raw/agents/nova/research/2026-04-28-dramaclaw-build-vs-adopt-recommendation.md
-  - raw/agents/mt/handoffs/2026-04-27-dramaclaw-short-drama-mvp-handoff-to-nova.md
+  - docs/research/2026-04-28-dramaclaw-build-vs-adopt-recommendation.md
+  - docs/handoffs/2026-04-27-dramaclaw-short-drama-mvp-handoff-to-nova.md
 ---
 
 # Plotloom Agent-neutral Skill Pack 调研

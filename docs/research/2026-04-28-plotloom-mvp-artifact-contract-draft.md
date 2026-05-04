@@ -10,7 +10,7 @@ tags:
   - short-drama
   - mvp
 related:
-  - raw/agents/nova/research/2026-04-28-plotloom-agent-neutral-skill-pack-research.md
+  - docs/research/2026-04-28-plotloom-agent-neutral-skill-pack-research.md
 ---
 
 # Plotloom MVP Artifact Contract 初稿

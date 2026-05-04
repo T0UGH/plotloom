@@ -2,7 +2,7 @@
 
 > 日期：2026-05-04  
 > 状态：Brainstorm / design note  
-> 来源：`raw/agents/nova/research/2026-05-04-plotloom-iteration-issues-session-recall.md`  
+> 来源：`docs/research/production-pipeline/2026-05-04-plotloom-iteration-issues-session-recall.md`  
 > 目的：把人脸策略、reference 传递、prompt 编译、adapter 追责拆成可分阶段落地的小契约，避免一次 patch 同时改变 CLI、receipt、provider request 和重试行为。
 
 ## 1. 当前判断
