@@ -114,6 +114,29 @@ def test_config_doctor_warns_for_unknown_adapter_sections(tmp_path, monkeypatch)
     assert "hidden" not in result.output
 
 
+def test_config_doctor_youtube_reports_missing_oauth_files(tmp_path, monkeypatch):
+    cfg = tmp_path / ".env.toml"
+    cfg.write_text(
+        '[adapters.youtube-shorts]\n'
+        'client_secrets_file = "~/missing-youtube-client-secrets.json"\n'
+        'credentials_file = "~/missing-youtube-credentials.json"\n'
+        'default_privacy = "public"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("YOUTUBE_CLIENT_SECRETS_FILE", raising=False)
+    monkeypatch.delenv("YOUTUBE_CREDENTIALS_FILE", raising=False)
+
+    result = CliRunner().invoke(main, ["--json", "--config", str(cfg), "config", "doctor", "--adapter", "youtube-shorts"])
+
+    assert result.exit_code == 2
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["adapter"] == "youtube-shorts"
+    assert payload["checks"]["client_secrets_file"]["status"] == "missing"
+    assert payload["checks"]["credentials_file"]["status"] == "missing"
+    assert payload["checks"]["google_api_client"]["status"] in {"available", "missing"}
+
+
 def test_config_doctor_unknown_adapter_is_usage_error(tmp_path):
     cfg = tmp_path / ".env.toml"
     cfg.write_text("", encoding="utf-8")

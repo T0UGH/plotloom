@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import shutil
+from pathlib import Path
 from typing import Any
 
 import click
@@ -9,7 +10,7 @@ import click
 from plotloom.config import DEFAULT_TEMPLATE, load_config, permission_warning, resolve_config_path, write_default_config
 from plotloom.output import emit
 
-KNOWN_ADAPTERS = ("codex-app-server", "dreamina-cli", "volcengine-seedance")
+KNOWN_ADAPTERS = ("codex-app-server", "dreamina-cli", "volcengine-seedance", "youtube-shorts")
 ADAPTER_CHOICES = (*KNOWN_ADAPTERS, "all")
 
 
@@ -48,7 +49,11 @@ def config_init(ctx: click.Context, force: bool, print_template: bool) -> None:
 
 
 def _dependency_check(module_name: str) -> dict[str, str]:
-    return {"status": "available" if importlib.util.find_spec(module_name) else "missing"}
+    try:
+        available = importlib.util.find_spec(module_name) is not None
+    except (ModuleNotFoundError, ValueError):
+        available = False
+    return {"status": "available" if available else "missing"}
 
 
 def _binary_check(binary: str | None) -> dict[str, str]:
@@ -63,6 +68,14 @@ def _secret_check(source: str) -> dict[str, str]:
     return {"status": "present", "source": source}
 
 
+def _file_check(path: str | None, source: str) -> dict[str, str]:
+    if not path:
+        return {"status": "absent"}
+    expanded = Path(path).expanduser()
+    status = "present" if expanded.exists() else "missing"
+    return {"status": status, "source": source, "path": str(expanded)}
+
+
 def _check_adapter(cfg: Any, adapter: str) -> dict[str, dict[str, str]]:
     if adapter == "codex-app-server":
         return {"codex_binary": _binary_check(cfg.adapter_value(adapter, "codex_binary", "codex"))}
@@ -72,6 +85,20 @@ def _check_adapter(cfg: Any, adapter: str) -> dict[str, dict[str, str]]:
         return {
             "ark_api_key": _secret_check(cfg.value_source("adapters.volcengine-seedance", "ark_api_key")),
             "volcenginesdkarkruntime": _dependency_check("volcenginesdkarkruntime"),
+        }
+    if adapter == "youtube-shorts":
+        return {
+            "client_secrets_file": _file_check(
+                cfg.adapter_value(adapter, "client_secrets_file", "~/.plotloom/youtube-client-secrets.json"),
+                cfg.value_source("adapters.youtube-shorts", "client_secrets_file"),
+            ),
+            "credentials_file": _file_check(
+                cfg.adapter_value(adapter, "credentials_file", "~/.plotloom/youtube-credentials.json"),
+                cfg.value_source("adapters.youtube-shorts", "credentials_file"),
+            ),
+            "default_privacy": {"status": "ok", "value": cfg.adapter_value(adapter, "default_privacy", "public")},
+            "google_api_client": _dependency_check("googleapiclient.discovery"),
+            "google_auth_oauthlib": _dependency_check("google_auth_oauthlib.flow"),
         }
     raise ValueError(adapter)
 
